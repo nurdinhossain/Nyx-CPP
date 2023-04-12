@@ -282,12 +282,12 @@ Square Board::getEnPassant() const
 
 UInt64 Board::getCurrentHash() const
 {
-    // apply castling rights and en passant and side to hash
-    UInt64 hash = currentHash;
-    hash ^= ZOBRIST_CASTLE[castlingRights];
-    if (enPassant != Square::NONE) hash ^= ZOBRIST_EN_PASSANT[enPassant % 8];
-    hash ^= ZOBRIST_SIDE * nextMove;
-    return hash;
+    return currentHash;
+}
+
+int Board::getHistory() const
+{
+    return history[currentHash % HISTORY_SIZE];
 }
 
 int Board::getPieceCount(Color color, Piece piece) const
@@ -934,13 +934,17 @@ void Board::makePromoCaptureMove(Square from, Square to, Piece promoPiece)
     makePromoMove(from, to, promoPiece);
 }
 
-void Board::makeMove(Move &move, bool permanent)
+void Board::makeMove(Move &move)
 {
     // deconstruct move
     MoveType type = move.type;
     Square from = move.from;
     Square to = move.to;
     Piece pieceTaken = move.pieceTaken;
+
+    // undo old zobrists
+    currentHash ^= ZOBRIST_CASTLE[castlingRights];
+    if (enPassant != Square::NONE) currentHash ^= ZOBRIST_EN_PASSANT[enPassant % 8];
 
     // make move
     if (type == MoveType::QUIET) makeQuietMove(from, to);
@@ -979,11 +983,13 @@ void Board::makeMove(Move &move, bool permanent)
     // update en passant
     enPassant = (type != MoveType::DOUBLE_PAWN_PUSH) ? Square::NONE : enPassant;
 
-    // if the move is permanent, update the history
-    if (permanent)
-    {
-        history[getCurrentHash() % HISTORY_SIZE]++;
-    }
+    // update zobrist hash
+    currentHash ^= ZOBRIST_CASTLE[castlingRights];
+    if (enPassant != Square::NONE) currentHash ^= ZOBRIST_EN_PASSANT[enPassant % 8];
+    currentHash ^= ZOBRIST_SIDE;
+
+    // update history
+    history[currentHash % HISTORY_SIZE]++;
 }
 
 void Board::unmakeMove(Move &move)
@@ -996,6 +1002,13 @@ void Board::unmakeMove(Move &move)
     int oldCastle = move.oldCastle;
     Square oldEP = move.oldEnPassant;
     Color color = static_cast<Color>(Color::BLACK - nextMove);
+
+    // update history
+    history[currentHash % HISTORY_SIZE]--;
+
+    // undo old zobrists
+    currentHash ^= ZOBRIST_CASTLE[castlingRights];
+    if (enPassant != Square::NONE) currentHash ^= ZOBRIST_EN_PASSANT[enPassant % 8];
 
     // unmake move
     if (type == MoveType::QUIET) makeQuietMove(to, from);
@@ -1053,15 +1066,26 @@ void Board::unmakeMove(Move &move)
     nextMove = color;
     castlingRights = oldCastle;
     enPassant = oldEP;
+
+    // update zobrist hash
+    currentHash ^= ZOBRIST_CASTLE[castlingRights];
+    if (enPassant != Square::NONE) currentHash ^= ZOBRIST_EN_PASSANT[enPassant % 8];
+    currentHash ^= ZOBRIST_SIDE;
 }
 
 Square Board::makeNullMove()
 {
     Square oldEP = enPassant;
 
+    // undo old zobrists
+    if (enPassant != Square::NONE) currentHash ^= ZOBRIST_EN_PASSANT[enPassant % 8];
+
     // update game state
     nextMove = static_cast<Color>(Color::BLACK - nextMove);
     enPassant = Square::NONE;
+
+    // update zobrist hash
+    currentHash ^= ZOBRIST_SIDE;
 
     return oldEP;
 }
@@ -1071,6 +1095,10 @@ void Board::unmakeNullMove(Square oldEP)
     // update game state
     nextMove = static_cast<Color>(Color::BLACK - nextMove);
     enPassant = oldEP;
+
+    // update zobrist hash
+    if (enPassant != Square::NONE) currentHash ^= ZOBRIST_EN_PASSANT[enPassant % 8];
+    currentHash ^= ZOBRIST_SIDE;
 }
 
 // perft with bulk counting

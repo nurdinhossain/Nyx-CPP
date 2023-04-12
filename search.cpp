@@ -1,10 +1,46 @@
 #include <iostream>
+#include <chrono>
 #include "search.h"
 #include "evaluate.h"
-#include <chrono>
+#include "moveorder.h"
 
-// alpha beta search negamax
-int search(Board board, int depth, int ply, int alpha, int beta, Move &bestMoveCurrentIteration, int &bestScoreCurrentIteration, auto start)
+// implement struct member functions
+void SearchStats::print()
+{
+    std::cout << "Nodes: " << nodes;
+    std::cout << ", QNodes: " << qNodes;
+    std::cout << ", Cutoffs: " << cutoffs;
+    std::cout << ", QCutoffs: " << qCutoffs << std::endl;
+}
+
+void SearchStats::clear()
+{
+    nodes = 0;
+    qNodes = 0;
+    cutoffs = 0;
+    qCutoffs = 0;
+}
+
+/* IMPLEMENT AI METHODS */
+
+// constructor/destructor
+AI::AI()
+{
+    // initialize transposition table
+    transpositionTable_ = TranspositionTable(TT_SIZE);
+
+    // initialize search stats
+    searchStats_ = SearchStats();
+}
+
+AI::~AI()
+{
+    // delete transposition table
+    delete &transpositionTable_; 
+}
+
+// search
+int AI::search(Board board, int depth, int ply, int alpha, int beta, auto start)
 {
     // check for time
     auto end = std::chrono::high_resolution_clock::now();
@@ -14,11 +50,25 @@ int search(Board board, int depth, int ply, int alpha, int beta, Move &bestMoveC
         return NEG_INF;
     }
 
+    // increment nodes
+    searchStats_.nodes++;
+
+    // insufficient material
+    if (board.insufficientMaterial(WHITE) && board.insufficientMaterial(BLACK))
+    {
+        return DRAW;
+    }
+
+    // check for threefold repetition
+    if (board.getHistory() > 1)
+    {
+        return DRAW;
+    }
+
     // check for max depth
     if (depth <= 0)
     {
-        int value = quiesce(board, alpha, beta);
-        return value;
+        return quiesce(board, alpha, beta);
     }
 
     // generate moves
@@ -39,12 +89,9 @@ int search(Board board, int depth, int ply, int alpha, int beta, Move &bestMoveC
         }
     }
 
-    if (board.insufficientMaterial(WHITE) && board.insufficientMaterial(BLACK))
-    {
-        return DRAW;
-    }
-
-    // sort moves *NOT IMPLEMENTED*
+    // sort moves 
+    scoreMoves(board, moves, numMoves);
+    sortMoves(moves, numMoves);
 
     // loop through moves
     for (int i = 0; i < numMoves; i++)
@@ -53,28 +100,27 @@ int search(Board board, int depth, int ply, int alpha, int beta, Move &bestMoveC
         board.makeMove(moves[i]);
 
         // search
-        int score = -search(board, depth - 1, ply + 1, -beta, -alpha, bestMoveCurrentIteration, bestScoreCurrentIteration, start);
+        int score = -search(board, depth - 1, ply + 1, -beta, -alpha, start);
 
-        // unmake move
+        // undo move
         board.unmakeMove(moves[i]);
 
-        // check for beta cutoff
+        // check for cutoff
         if (score >= beta)
         {
+            searchStats_.cutoffs++;
             return beta;
-        }   
+        }
 
-        // check for new best move and update alpha
+        // update alpha
         if (score > alpha)
         {
-            // update alpha
             alpha = score;
 
-            // update best move
             if (ply == 0)
             {
-                bestMoveCurrentIteration = moves[i];
-                bestScoreCurrentIteration = score;
+                bestMoveCurrentIteration_ = moves[i];
+                bestScoreCurrentIteration_ = score;
             }
         }
     }
@@ -84,30 +130,35 @@ int search(Board board, int depth, int ply, int alpha, int beta, Move &bestMoveC
 }
 
 // quiescence search
-int quiesce(Board board, int alpha, int beta)
-{   
+int AI::quiesce(Board board, int alpha, int beta)
+{
+    // increment qNodes
+    searchStats_.qNodes++;
+
     // evaluate board
     int score = evaluate(board);
 
-    // check for beta cutoff
+    // check for cutoff
     if (score >= beta)
     {
+        searchStats_.qCutoffs++;
         return beta;
     }
 
-    // check for new best move and update alpha
+    // update alpha
     if (score > alpha)
     {
-        // update alpha
         alpha = score;
     }
 
     // generate attacking moves
     board.moveGenerationSetup();
-    Move moves[MAX_MOVES];
+    Move moves[MAX_MOVES_ATTACK];
     int numMoves = board.generateMoves(moves, true);
 
-    // sort moves *NOT IMPLEMENTED*
+    // sort moves
+    scoreMoves(board, moves, numMoves);
+    sortMoves(moves, numMoves);
 
     // loop through moves
     for (int i = 0; i < numMoves; i++)
@@ -118,19 +169,19 @@ int quiesce(Board board, int alpha, int beta)
         // search
         score = -quiesce(board, -beta, -alpha);
 
-        // unmake move
+        // undo move
         board.unmakeMove(moves[i]);
 
-        // check for beta cutoff
+        // check for cutoff
         if (score >= beta)
         {
+            searchStats_.qCutoffs++;
             return beta;
         }
 
-        // check for new best move and update alpha
+        // update alpha
         if (score > alpha)
         {
-            // update alpha
             alpha = score;
         }
     }
@@ -139,20 +190,23 @@ int quiesce(Board board, int alpha, int beta)
     return alpha;
 }
 
-// iterative deepening
-Move getBestMove(Board board)
+// get best move through iterative deepening
+Move AI::getBestMove(Board board)
 {
     // initialize variables
     Move bestMove = Move();
     int bestScore = 0;
     int depth = 1;
-
+    
     // iterative deepening with time
     auto start = std::chrono::high_resolution_clock::now();
     while (depth <= MAX_DEPTH)
     {
+        // clear stats
+        searchStats_.clear();
+
         // search
-        int score = search(board, depth, 0, NEG_INF, POS_INF, bestMove, bestScore, start);
+        search(board, depth, 0, NEG_INF, POS_INF, start);
 
         // check for time
         auto end = std::chrono::high_resolution_clock::now();
@@ -162,23 +216,26 @@ Move getBestMove(Board board)
             break;
         }
 
+        // update best move and score if the call was not broken prematurely
+        bestMove = bestMoveCurrentIteration_;
+        bestScore = bestScoreCurrentIteration_;  
+
+        // print info
+        std::cout << "depth: " << depth;
+        std::cout << ", time: " << elapsed.count();
+        std::cout << ", best move: " << indexToSquare(bestMove.from) << indexToSquare(bestMove.to);
+        std::cout << ", score: " << bestScore << ", ";
+        searchStats_.print();
+
         // check for mate
-        if (score >= MATE - MAX_DEPTH || score <= -MATE + MAX_DEPTH)
+        if (bestScore >= MATE - MAX_DEPTH || bestScore <= -MATE + MAX_DEPTH)
         {
             break;
         }
 
         // increment depth
-        depth++;
-
-        // print info
-        std::cout << "depth: " << depth << std::endl;
+        depth++; 
     }
-
-    // print info
-    std::cout << "best move: " << indexToSquare(bestMove.from) << indexToSquare(bestMove.to) << std::endl;
-    std::cout << "best score: " << bestScore << std::endl;
-    std::cout << "depth: " << depth << std::endl;
 
     // return best move
     return bestMove;

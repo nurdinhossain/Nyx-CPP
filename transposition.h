@@ -25,6 +25,7 @@ class TranspositionTable
     public:
         // constructor and destructor
         TranspositionTable(int size);
+        TranspositionTable();
         ~TranspositionTable();
 
         // helpers/getters

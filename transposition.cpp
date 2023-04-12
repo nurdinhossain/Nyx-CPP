@@ -11,6 +11,15 @@ TranspositionTable::TranspositionTable(int size)
     table_ = new Entry[size_];
 }
 
+TranspositionTable::TranspositionTable()
+{
+    // set size
+    size_ = 0;
+
+    // allocate memory
+    table_ = nullptr;
+}
+
 TranspositionTable::~TranspositionTable()
 {
     // free memory

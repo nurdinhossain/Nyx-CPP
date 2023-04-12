@@ -1,4 +1,5 @@
 #include "evaluate.h"
+#include <iostream>
 
 // eval function
 int evaluate(Board board)
