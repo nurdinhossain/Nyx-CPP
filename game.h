@@ -381,7 +381,7 @@ constexpr int KING_TABLE_WHITE_ENDGAME[64] =
 
 // create multi-dimensional array called TABLES that stores the above arrays in 2 x 6 x 2 x 64 array (2 colors, 6 pieces, 2 phases, 64 squares)
 extern const int* TABLES[2][6][2];
-const int HISTORY_SIZE = 2048;
+const int HISTORY_SIZE = 2; // 1 mb = 1 * 1024 * 1024 bytes
 
 Color extractColor(int);
 Piece extractPiece(int);
@@ -466,7 +466,8 @@ class Board
 
         // hashing
         UInt64 currentHash; // current hash
-        int history[HISTORY_SIZE]; // history of positions
+        int size_; // size of history table
+        int* history; // dynamic history table
 
         // for generating legal moves
         Square kingIndices[2]; // 2 colors

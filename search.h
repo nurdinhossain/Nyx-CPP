@@ -7,7 +7,7 @@ const int MAX_DEPTH = 64;
 const int MAX_MOVES = 256;
 const int MAX_MOVES_ATTACK = 64;
 const int MAX_TIME = 10;
-const int TT_SIZE = 1000000;
+const int TT_SIZE = 8; // in MB
 
 // struct for gathering statistics about the search
 struct SearchStats
@@ -16,6 +16,7 @@ struct SearchStats
     int qNodes;
     int cutoffs;
     int qCutoffs;
+    int ttHits;
 
     // print and clear methods
     void print();

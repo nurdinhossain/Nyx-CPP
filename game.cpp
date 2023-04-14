@@ -1,6 +1,7 @@
 #include "bitboard.h"
 #include "game.h"
 #include <iostream>
+#include <cmath>
 
 const int MAX_MOVES = 256;
 const int* TABLES[2][6][2] =
@@ -91,9 +92,15 @@ Board::Board(std::string fen)
     blockMaskMG = 0;
 
     // FOR HISTORY
-    for (int i = 0; i < HISTORY_SIZE; i++) {
-        history[i] = 0;
+    int mb = (int)log2(HISTORY_SIZE);
+    size_ = (mb * 1024 * 1024) / sizeof(int);
+
+    // free memory if already allocated
+    if (history != NULL) {
+        free(history);
     }
+
+    history = (int*)calloc(size_, sizeof(int));
 
     // split string into parts by space
     std::string parts[4];
@@ -179,6 +186,7 @@ Board::Board(std::string fen)
 
 Board::~Board()
 {
+    free(history);
 }
 
 void Board::print() const
@@ -287,7 +295,7 @@ UInt64 Board::getCurrentHash() const
 
 int Board::getHistory() const
 {
-    return history[currentHash % HISTORY_SIZE];
+    return history[currentHash % size_];
 }
 
 int Board::getPieceCount(Color color, Piece piece) const
@@ -989,7 +997,7 @@ void Board::makeMove(Move &move)
     currentHash ^= ZOBRIST_SIDE;
 
     // update history
-    history[currentHash % HISTORY_SIZE]++;
+    history[currentHash % size_];
 }
 
 void Board::unmakeMove(Move &move)
@@ -1004,7 +1012,7 @@ void Board::unmakeMove(Move &move)
     Color color = static_cast<Color>(Color::BLACK - nextMove);
 
     // update history
-    history[currentHash % HISTORY_SIZE]--;
+    history[currentHash % size_]--;
 
     // undo old zobrists
     currentHash ^= ZOBRIST_CASTLE[castlingRights];

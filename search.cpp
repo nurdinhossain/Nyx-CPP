@@ -11,6 +11,7 @@ void SearchStats::print()
     std::cout << ", QNodes: " << qNodes;
     std::cout << ", Cutoffs: " << cutoffs;
     std::cout << ", QCutoffs: " << qCutoffs << std::endl;
+    std::cout << "TT Hits: " << ttHits << std::endl;
 }
 
 void SearchStats::clear()
@@ -19,6 +20,7 @@ void SearchStats::clear()
     qNodes = 0;
     cutoffs = 0;
     qCutoffs = 0;
+    ttHits = 0;
 }
 
 /* IMPLEMENT AI METHODS */
@@ -26,17 +28,12 @@ void SearchStats::clear()
 // constructor/destructor
 AI::AI()
 {
-    // initialize transposition table
-    transpositionTable_ = TranspositionTable(TT_SIZE);
-
-    // initialize search stats
-    searchStats_ = SearchStats();
+    // set the transposition table size
+    transpositionTable_.setSize(TT_SIZE);
 }
 
 AI::~AI()
 {
-    // delete transposition table
-    delete &transpositionTable_; 
 }
 
 // search
@@ -65,6 +62,14 @@ int AI::search(Board board, int depth, int ply, int alpha, int beta, auto start)
         return DRAW;
     }
 
+    // transposition table lookup
+    int ttScore = transpositionTable_.getScore(board.getCurrentHash(), depth, ply, alpha, beta);
+    if (ttScore != NEG_INF)
+    {
+        searchStats_.ttHits++;
+        return ttScore;
+    }
+
     // check for max depth
     if (depth <= 0)
     {
@@ -89,9 +94,24 @@ int AI::search(Board board, int depth, int ply, int alpha, int beta, auto start)
         }
     }
 
+    // if ply is 0, print moves
+    if (ply == 0)
+    {
+        std::cout << "Moves: ";
+        for (int i = 0; i < numMoves; i++)
+        {
+            std::cout << indexToSquare(moves[i].from) << indexToSquare(moves[i].to) << " ";
+        }
+        std::cout << std::endl;
+    }
+
     // sort moves 
     scoreMoves(board, moves, numMoves);
     sortMoves(moves, numMoves);
+
+    // initialize transposition flag and best move
+    Flag flag = UPPER_BOUND;
+    Move bestMove = moves[0];
 
     // loop through moves
     for (int i = 0; i < numMoves; i++)
@@ -108,6 +128,7 @@ int AI::search(Board board, int depth, int ply, int alpha, int beta, auto start)
         // check for cutoff
         if (score >= beta)
         {
+            transpositionTable_.store(board.getCurrentHash(), LOWER_BOUND, depth, ply, score, moves[i]);
             searchStats_.cutoffs++;
             return beta;
         }
@@ -116,6 +137,8 @@ int AI::search(Board board, int depth, int ply, int alpha, int beta, auto start)
         if (score > alpha)
         {
             alpha = score;
+            flag = EXACT;
+            bestMove = moves[i];
 
             if (ply == 0)
             {
@@ -124,6 +147,9 @@ int AI::search(Board board, int depth, int ply, int alpha, int beta, auto start)
             }
         }
     }
+
+    // store in transposition table
+    transpositionTable_.store(board.getCurrentHash(), flag, depth, ply, alpha, bestMove);
 
     // return alpha
     return alpha;
@@ -197,6 +223,9 @@ Move AI::getBestMove(Board board)
     Move bestMove = Move();
     int bestScore = 0;
     int depth = 1;
+
+    // clear transposition table
+    transpositionTable_.clear();
     
     // iterative deepening with time
     auto start = std::chrono::high_resolution_clock::now();

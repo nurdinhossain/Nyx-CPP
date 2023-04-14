@@ -1,48 +1,48 @@
 #include "transposition.h"
 #include "evaluate.h"
+#include <iostream>
+#include <cmath>
+#include <cstring>
 
 // constructor and destructor
-TranspositionTable::TranspositionTable(int size)
-{
-    // set size
-    size_ = size;
-
-    // allocate memory
-    table_ = new Entry[size_];
-}
-
 TranspositionTable::TranspositionTable()
 {
-    // set size
-    size_ = 0;
+    setSize(0);
+}
 
-    // allocate memory
-    table_ = nullptr;
+TranspositionTable::TranspositionTable(int mb)
+{
+    setSize(mb);
 }
 
 TranspositionTable::~TranspositionTable()
 {
-    // free memory
-    delete[] table_;
+    free(table_);
 }
 
 // helpers/getters
+void TranspositionTable::setSize(int mb)
+{
+    // get a power of 2 for the size
+    mb = 1 << (int)log2(mb);
+
+    // set the size
+    size_ = (mb * 1024 * 1024) / sizeof(Entry); // 1 MB = 1024 KB = 1024 * 1024 B
+
+    // free the table if it exists
+    if (table_ != NULL)
+    {
+        free(table_);
+    }
+
+    // allocate the table
+    table_ = (Entry*)calloc(size_, sizeof(Entry));
+}   
+
 void TranspositionTable::clear()
 {
-    // clear the table
-    for (int i = 0; i < size_; i++)
-    {
-        table_[i].key = 0;
-        table_[i].flag = EXACT;
-        table_[i].depth = 0;
-        table_[i].score = 0;
-        table_[i].move = Move();
-    }
-}
-
-int TranspositionTable::size()
-{
-    return size_;
+    // clear the table using memset
+    memset(table_, 0, size_ * sizeof(Entry));
 }
 
 Move TranspositionTable::getMove(UInt64 key)
@@ -50,14 +50,8 @@ Move TranspositionTable::getMove(UInt64 key)
     // get the entry
     Entry* entry = probe(key);
 
-    // if the entry exists, return the move
-    if (entry != nullptr)
-    {
-        return entry->move;
-    }
-
-    // otherwise, return a null move
-    return Move();
+    // return the move
+    return entry->move;
 }
 
 int TranspositionTable::correctScoreStore(int score, int ply)
@@ -93,33 +87,66 @@ int TranspositionTable::correctScoreRead(int score, int ply)
 }
 
 // store/access
-void TranspositionTable::store(UInt64 key, Flag flag, int depth, int ply, int score, Move move)
-{
-    // get the entry
-    Entry* entry = probe(key);
-
-    // if the entry exists, store the data
-    if (entry != nullptr)
-    {
-        entry->key = key;
-        entry->flag = flag;
-        entry->depth = depth;
-        entry->score = correctScoreStore(score, ply);
-        entry->move = move;
-    }
-}
-
 Entry* TranspositionTable::probe(UInt64 key)
 {
     // get the index
     int index = key % size_;
 
-    // if the key matches, return the entry
-    if (table_[index].key == key)
+    // return the entry
+    return &table_[index];
+}
+
+void TranspositionTable::store(UInt64 key, Flag flag, int depth, int ply, int score, Move move)
+{
+    // get the entry
+    Entry* entry = probe(key);
+
+    // store the data
+    entry->key = key;
+    entry->flag = flag;
+    entry->depth = depth;
+    entry->score = correctScoreStore(score, ply);
+    entry->move = move;
+}
+
+int TranspositionTable::getScore(UInt64 key, int depth, int ply, int alpha, int beta)
+{
+    // get the entry
+    Entry* entry = probe(key);
+
+    // ensure the key matches
+    if (entry->key != key)
     {
-        return &table_[index];
+        return NEG_INF;
     }
 
-    // otherwise, return null
-    return nullptr;
+    // if key does match, check if the depth is sufficient
+    if (entry->depth >= depth)
+    {
+        // get the score
+        int score = correctScoreRead(entry->score, ply);
+
+        // check the flag
+        if (entry->flag == EXACT)
+        {
+            return score;
+        }
+        else if (entry->flag == UPPER_BOUND)
+        {
+            if (score <= alpha)
+            {
+                return score;
+            }
+        }
+        else if (entry->flag == LOWER_BOUND)
+        {
+            if (score >= beta)
+            {
+                return score;
+            }
+        }
+    }
+
+    // return negative infinity
+    return NEG_INF;
 }

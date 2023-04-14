@@ -24,13 +24,13 @@ class TranspositionTable
 {
     public:
         // constructor and destructor
-        TranspositionTable(int size);
         TranspositionTable();
+        TranspositionTable(int mb);
         ~TranspositionTable();
 
         // helpers/getters
+        void setSize(int mb);
         void clear();
-        int size();
         Move getMove(UInt64 key);
         int correctScoreStore(int score, int ply);
         int correctScoreRead(int score, int ply);
@@ -38,6 +38,7 @@ class TranspositionTable
         // store/access
         void store(UInt64 key, Flag flag, int depth, int ply, int score, Move move);
         Entry* probe(UInt64 key);
+        int getScore(UInt64 key, int depth, int ply, int alpha, int beta);
     private:
         // variables
         int size_;
