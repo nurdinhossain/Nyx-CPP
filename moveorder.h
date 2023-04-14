@@ -1,5 +1,6 @@
 #pragma once
 #include "game.h"
+#include "transposition.h"
 
 const int MVV_LVA[6][6] = 
 {
@@ -11,8 +12,10 @@ const int MVV_LVA[6][6] =
     {0, 0, 0, 0, 0, 0}  // victim K, attacker P, N, B, R, Q
 };
 
+const int TT_MOVE = 9999;
+
 // score moves based on MVV/LVA
-void scoreMoves(Board board, Move moves[], int numMoves);
+void scoreMoves(Board& board, TranspositionTable* tt, Move moves[], int numMoves);
 
 // sort moves based on score
 void sortMoves(Move moves[], int numMoves);

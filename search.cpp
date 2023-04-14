@@ -29,15 +29,17 @@ void SearchStats::clear()
 AI::AI()
 {
     // set the transposition table size
-    transpositionTable_.setSize(TT_SIZE);
+    transpositionTable_ = new TranspositionTable(TT_SIZE);
 }
 
 AI::~AI()
 {
+    // delete the transposition table
+    delete transpositionTable_;
 }
 
 // search
-int AI::search(Board board, int depth, int ply, int alpha, int beta, auto start)
+int AI::search(Board& board, int depth, int ply, int alpha, int beta, auto start)
 {
     // check for time
     auto end = std::chrono::high_resolution_clock::now();
@@ -63,7 +65,7 @@ int AI::search(Board board, int depth, int ply, int alpha, int beta, auto start)
     }
 
     // transposition table lookup
-    int ttScore = transpositionTable_.getScore(board.getCurrentHash(), depth, ply, alpha, beta);
+    int ttScore = transpositionTable_->getScore(board.getCurrentHash(), depth, ply, alpha, beta);
     if (ttScore != NEG_INF)
     {
         searchStats_.ttHits++;
@@ -94,19 +96,8 @@ int AI::search(Board board, int depth, int ply, int alpha, int beta, auto start)
         }
     }
 
-    // if ply is 0, print moves
-    if (ply == 0)
-    {
-        std::cout << "Moves: ";
-        for (int i = 0; i < numMoves; i++)
-        {
-            std::cout << indexToSquare(moves[i].from) << indexToSquare(moves[i].to) << " ";
-        }
-        std::cout << std::endl;
-    }
-
     // sort moves 
-    scoreMoves(board, moves, numMoves);
+    scoreMoves(board, transpositionTable_, moves, numMoves);
     sortMoves(moves, numMoves);
 
     // initialize transposition flag and best move
@@ -128,7 +119,7 @@ int AI::search(Board board, int depth, int ply, int alpha, int beta, auto start)
         // check for cutoff
         if (score >= beta)
         {
-            transpositionTable_.store(board.getCurrentHash(), LOWER_BOUND, depth, ply, score, moves[i]);
+            transpositionTable_->store(board.getCurrentHash(), LOWER_BOUND, depth, ply, score, moves[i]);
             searchStats_.cutoffs++;
             return beta;
         }
@@ -149,14 +140,14 @@ int AI::search(Board board, int depth, int ply, int alpha, int beta, auto start)
     }
 
     // store in transposition table
-    transpositionTable_.store(board.getCurrentHash(), flag, depth, ply, alpha, bestMove);
+    transpositionTable_->store(board.getCurrentHash(), flag, depth, ply, alpha, bestMove);
 
     // return alpha
     return alpha;
 }
 
 // quiescence search
-int AI::quiesce(Board board, int alpha, int beta)
+int AI::quiesce(Board& board, int alpha, int beta)
 {
     // increment qNodes
     searchStats_.qNodes++;
@@ -183,7 +174,7 @@ int AI::quiesce(Board board, int alpha, int beta)
     int numMoves = board.generateMoves(moves, true);
 
     // sort moves
-    scoreMoves(board, moves, numMoves);
+    scoreMoves(board, transpositionTable_, moves, numMoves);
     sortMoves(moves, numMoves);
 
     // loop through moves
@@ -217,7 +208,7 @@ int AI::quiesce(Board board, int alpha, int beta)
 }
 
 // get best move through iterative deepening
-Move AI::getBestMove(Board board)
+Move AI::getBestMove(Board& board)
 {
     // initialize variables
     Move bestMove = Move();
@@ -225,7 +216,7 @@ Move AI::getBestMove(Board board)
     int depth = 1;
 
     // clear transposition table
-    transpositionTable_.clear();
+    transpositionTable_->clear();
     
     // iterative deepening with time
     auto start = std::chrono::high_resolution_clock::now();

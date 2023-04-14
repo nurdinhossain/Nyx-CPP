@@ -94,13 +94,7 @@ Board::Board(std::string fen)
     // FOR HISTORY
     int mb = (int)log2(HISTORY_SIZE);
     size_ = (mb * 1024 * 1024) / sizeof(int);
-
-    // free memory if already allocated
-    if (history != NULL) {
-        free(history);
-    }
-
-    history = (int*)calloc(size_, sizeof(int));
+    history = new int[size_];
 
     // split string into parts by space
     std::string parts[4];
@@ -186,7 +180,8 @@ Board::Board(std::string fen)
 
 Board::~Board()
 {
-    free(history);
+    std::cout << "deleting board" << std::endl;
+    delete[] history;
 }
 
 void Board::print() const

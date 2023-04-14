@@ -1,11 +1,21 @@
 #include "moveorder.h"
 
 // score moves based on MVV/LVA
-void scoreMoves(Board board, Move moves[], int numMoves) 
+void scoreMoves(Board& board, TranspositionTable* tt, Move moves[], int numMoves) 
 {
+    // check for tt move
+    Move ttMove = tt->getMove(board.getCurrentHash());
+
     for (int i = 0; i < numMoves; i++) 
     {
         Move move = moves[i];
+
+        // check for tt move
+        if (move.from == ttMove.from && move.to == ttMove.to && move.type == ttMove.type)
+        {
+            moves[i].score = TT_MOVE;
+            continue;
+        }
 
         // check for capture
         if (move.pieceTaken != EMPTY)
@@ -35,7 +45,8 @@ void scoreMoves(Board board, Move moves[], int numMoves)
         Piece piece = extractPiece(board.getSquareToPiece(move.from));
         int openingGain = TABLES[color][piece-1][0][move.to] - TABLES[color][piece-1][0][move.from];
         int endgameGain = TABLES[color][piece-1][1][move.to] - TABLES[color][piece-1][1][move.from];
-        moves[i].score += openingGain + endgameGain;
+        int phase = board.getPhase();
+        moves[i].score += (openingGain * (256 - phase) + endgameGain * phase) / 256;
     }
 }
 

@@ -2,47 +2,60 @@
 #include "evaluate.h"
 #include <iostream>
 #include <cmath>
-#include <cstring>
 
 // constructor and destructor
 TranspositionTable::TranspositionTable()
 {
-    setSize(0);
+    // ensure size is a power of 2
+    int tt_size = 1 << (int)log2(TT_SIZE);
+
+    // set size
+    size_ = tt_size * 1024 * 1024 / sizeof(Entry);
+
+    // initialize array
+    table_ = new Entry[size_];
+
+    std::cout << "Transposition table size: " << size_ << std::endl;
 }
 
 TranspositionTable::TranspositionTable(int mb)
 {
-    setSize(mb);
+    // ensure size is a power of 2
+    mb = 1 << (int)log2(mb);
+
+    // set size
+    size_ = mb * 1024 * 1024 / sizeof(Entry);
+
+    // initialize array
+    table_ = new Entry[size_];
+
+    std::cout << "Transposition table size: " << size_ << std::endl;
 }
 
 TranspositionTable::~TranspositionTable()
 {
-    free(table_);
+    // delete the table
+    delete[] table_;
+
+    std::cout << "Transposition table deleted" << std::endl;
 }
 
-// helpers/getters
-void TranspositionTable::setSize(int mb)
-{
-    // get a power of 2 for the size
-    mb = 1 << (int)log2(mb);
-
-    // set the size
-    size_ = (mb * 1024 * 1024) / sizeof(Entry); // 1 MB = 1024 KB = 1024 * 1024 B
-
-    // free the table if it exists
-    if (table_ != NULL)
-    {
-        free(table_);
-    }
-
-    // allocate the table
-    table_ = (Entry*)calloc(size_, sizeof(Entry));
-}   
+// helpers/getters 
 
 void TranspositionTable::clear()
 {
-    // clear the table using memset
-    memset(table_, 0, size_ * sizeof(Entry));
+    std::cout << "Clearing transposition table" << std::endl;
+    // clear the table
+    for (int i = 0; i < size_; i++)
+    {
+        table_[i].key = 0;
+        table_[i].flag = EXACT;
+        table_[i].depth = 0;
+        table_[i].score = 0;
+        table_[i].move = Move();
+    }
+
+    std::cout << "Transposition table cleared" << std::endl;
 }
 
 Move TranspositionTable::getMove(UInt64 key)

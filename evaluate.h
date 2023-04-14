@@ -12,4 +12,4 @@ enum SCORE
 };
 
 // eval function
-int evaluate(Board board);
+int evaluate(Board& board);

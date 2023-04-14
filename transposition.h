@@ -1,6 +1,9 @@
 #pragma once
 #include "game.h"
 
+// constants
+const int TT_SIZE = 32; // in MB
+
 // enum for flags
 enum Flag
 {
@@ -29,7 +32,6 @@ class TranspositionTable
         ~TranspositionTable();
 
         // helpers/getters
-        void setSize(int mb);
         void clear();
         Move getMove(UInt64 key);
         int correctScoreStore(int score, int ply);

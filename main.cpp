@@ -7,7 +7,8 @@ using namespace std;
 
 int main()
 {
-	Board board = Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0");
+	Board board = Board("6k1/5p2/6p1/8/7p/8/6PP/6K1 b - - 0 0");
+	std::cout << "Board initialized" << std::endl;
 	processBishopAttacks("bishopAttackTable.txt");
 	processRookAttacks("rookAttackTable.txt");
 	

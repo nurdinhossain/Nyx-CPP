@@ -2,7 +2,7 @@
 #include <iostream>
 
 // eval function
-int evaluate(Board board)
+int evaluate(Board& board)
 {
     int phase = board.getPhase();
 
