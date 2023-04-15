@@ -366,7 +366,6 @@ UInt64 Board::inCheckFull() const
 {   
     Square kingIndex = kingIndices[nextMove];
     UInt64 occupancy = fullOccupied ^ pieces[nextMove][Piece::KING-1];
-    display(occupancy);
 
     UInt64 bishopAttackFromKing = lookupBishopAttack(kingIndex, occupancy);
     UInt64 rookAttackFromKing = lookupRookAttack(kingIndex, occupancy);

@@ -1,7 +1,7 @@
 #include "moveorder.h"
 
 // score moves based on MVV/LVA
-void scoreMoves(Board& board, TranspositionTable* tt, Move moves[], int numMoves) 
+void scoreMoves(Board& board, TranspositionTable* tt, Move killerMoves[][2], Move moves[], int numMoves, int ply) 
 {
     // check for tt move
     Move ttMove = tt->getMove(board.getCurrentHash());
@@ -24,29 +24,46 @@ void scoreMoves(Board& board, TranspositionTable* tt, Move moves[], int numMoves
             int piece = board.getSquareToPiece(move.from);
             Piece pieceMoved = extractPiece(piece);
 
-            // score move
-            moves[i].score += MVV_LVA[move.pieceTaken-1][pieceMoved-1];
+            // score move 
+            moves[i].score += MVV_LVA[move.pieceTaken-1][pieceMoved-1] + CAPTURE_OFFSET;
         }
 
         // check for promotion
         if (move.type >= KNIGHT_PROMOTION && move.type <= QUEEN_PROMOTION)
         {
             // score move based on promotion piece
-            moves[i].score += PIECE_VALUES[move.type - 5];
+            moves[i].score += PIECE_VALUES[move.type - 5] + PROMO_OFFSET;
         }
         else if (move.type >= KNIGHT_PROMOTION_CAPTURE && move.type <= QUEEN_PROMOTION_CAPTURE)
         {
             // score move based on promotion piece
-            moves[i].score += PIECE_VALUES[move.type - 9];
+            moves[i].score += PIECE_VALUES[move.type - 9] + PROMO_OFFSET;
+        }
+
+        // check for killer move
+        if (ply >= 0)
+            {
+            if (move.from == killerMoves[ply][0].from && move.to == killerMoves[ply][0].to && move.type == killerMoves[ply][0].type)
+            {
+                moves[i].score = CAPTURE_OFFSET;
+                continue;
+            }
+            else if (move.from == killerMoves[ply][1].from && move.to == killerMoves[ply][1].to && move.type == killerMoves[ply][1].type)
+            {
+                moves[i].score = CAPTURE_OFFSET - KILLER_VALUE;
+                continue;
+            }
         }
 
         // get positional gain from move
         Color color = board.getNextMove();
         Piece piece = extractPiece(board.getSquareToPiece(move.from));
-        int openingGain = TABLES[color][piece-1][0][move.to] - TABLES[color][piece-1][0][move.from];
-        int endgameGain = TABLES[color][piece-1][1][move.to] - TABLES[color][piece-1][1][move.from];
+        int openingFrom = TABLES[color][piece-1][0][move.from], openingTo = TABLES[color][piece-1][0][move.to];
+        int endgameFrom = TABLES[color][piece-1][1][move.from], endgameTo = TABLES[color][piece-1][1][move.to];
         int phase = board.getPhase();
-        moves[i].score += (openingGain * (256 - phase) + endgameGain * phase) / 256;
+        int fromScore = (openingFrom * (256 - phase) + endgameFrom * phase) / 256;
+        int toScore = (openingTo * (256 - phase) + endgameTo * phase) / 256;
+        moves[i].score += toScore - fromScore;
     }
 }
 

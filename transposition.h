@@ -2,7 +2,7 @@
 #include "game.h"
 
 // constants
-const int TT_SIZE = 32; // in MB
+const int TT_SIZE = 64; // in MB
 
 // enum for flags
 enum Flag

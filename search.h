@@ -7,6 +7,7 @@ const int MAX_DEPTH = 64;
 const int MAX_MOVES = 256;
 const int MAX_MOVES_ATTACK = 64;
 const int MAX_TIME = 5;
+const int KILLER_MAX_PLY = 64;
 
 // struct for gathering statistics about the search
 struct SearchStats
@@ -16,6 +17,12 @@ struct SearchStats
     int cutoffs;
     int qCutoffs;
     int ttHits;
+    int killersStored;
+    int reSearches;
+    int lmrReductions;
+    int futileReductions;
+    int deltaPruned;
+    int seePruned;
 
     // print and clear methods
     void print();
@@ -38,6 +45,7 @@ class AI
     private:
         // private fields
         TranspositionTable* transpositionTable_;
+        Move killerMoves_[KILLER_MAX_PLY][2];
         Move bestMoveCurrentIteration_;
         int bestScoreCurrentIteration_;
         SearchStats searchStats_;
