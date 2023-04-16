@@ -206,7 +206,7 @@ int AI::search(Board& board, int depth, int ply, int alpha, int beta, auto start
         bool pruningOk = !causesCheck && extensions == 0;
 
         // futile pruning
-        if (futile(board, moves[i], i, depth, alpha, beta) && pruningOk && ply > 0)
+        if (futile(board, moves[i], i, depth, alpha, beta) && pruningOk)
         {
             searchStats_.futileReductions++;
             continue;
