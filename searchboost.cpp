@@ -6,6 +6,64 @@
 #include <iostream>
 
 // methods for boosting search
+bool moveCausesCheck(Board& board, Move move)
+{
+    // NOTE: we don't worry about rare "promotion checks" here because promo moves are never pruned in the first place
+
+    Piece piece = extractPiece(board.getSquareToPiece(move.from));
+    Color enemy = static_cast<Color>(1 - board.getNextMove());
+    UInt64 enemyKing = board.getPiece(enemy, KING);
+    Square enemyKingSquare = static_cast<Square>(lsb(enemyKing));
+
+    // if the attacker is a knight, return true if its move attacks the enemy king
+    if (piece == KNIGHT)
+    {
+        if (KNIGHT_ATTACKS[move.to] & enemyKing)
+        {
+            return true;
+        }
+    }
+
+    // if the attacker is a pawn, return true if its move attacks the enemy king
+    if (piece == PAWN)
+    {
+        if (PAWN_ATTACKS[board.getNextMove()][move.to] & enemyKing)
+        {
+            return true;
+        }
+    }
+
+    // create occupancy board
+    UInt64 occupancy = board.getFullOccupied() ^ (1ULL << move.from) ^ (1ULL << move.to) ^ (1ULL << enemyKingSquare);
+
+    // generate bishop and rook attacks from enemy king square
+    UInt64 bishopAttackFromKingSquare = lookupBishopAttack(enemyKingSquare, occupancy);
+    UInt64 rookAttackFromKingSquare = lookupRookAttack(enemyKingSquare, occupancy);
+
+    // get intersection of bishop and rook attacks from enemy king square with ally pieces
+    UInt64 bishopAttackIntersection = bishopAttackFromKingSquare & (board.getPiece(board.getNextMove(), BISHOP) | board.getPiece(board.getNextMove(), QUEEN));
+    UInt64 rookAttackIntersection = rookAttackFromKingSquare & (board.getPiece(board.getNextMove(), ROOK) | board.getPiece(board.getNextMove(), QUEEN));
+    
+    // if the general intersection is not empty, return true
+    if (bishopAttackIntersection || rookAttackIntersection)
+    {
+        return true;
+    }
+
+    // if path intersects with the piece moved and it is queen/bishop/rook, return true
+    if (bishopAttackFromKingSquare & (1ULL << move.to) && (piece == BISHOP || piece == QUEEN))
+    {
+        return true;
+    }
+
+    if (rookAttackFromKingSquare & (1ULL << move.to) && (piece == ROOK || piece == QUEEN))
+    {
+        return true;
+    }
+
+    return false;
+}
+
 bool lmrValid(Board& board, Move move, int moveIndex, int depth)
 {
     // if moveIndex is greater than LMR_LIMIT, return false
@@ -22,12 +80,6 @@ bool lmrValid(Board& board, Move move, int moveIndex, int depth)
 
     // if move is not quiet, return false
     if (move.type != QUIET)
-    {
-        return false;
-    }
-
-    // if we are in check, return false
-    if (board.inCheckFull())
     {
         return false;
     }

@@ -201,8 +201,12 @@ int AI::search(Board& board, int depth, int ply, int alpha, int beta, auto start
     // loop through moves
     for (int i = 0; i < numMoves; i++)
     {
+        // see if move causes check
+        bool causesCheck = moveCausesCheck(board, moves[i]);
+        bool pruningOk = !causesCheck && extensions == 0;
+
         // futile pruning
-        if (futile(board, moves[i], i, depth, alpha, beta) && extensions == 0)
+        if (futile(board, moves[i], i, depth, alpha, beta) && pruningOk && ply > 0)
         {
             searchStats_.futileReductions++;
             continue;
@@ -213,7 +217,7 @@ int AI::search(Board& board, int depth, int ply, int alpha, int beta, auto start
 
         // search
         int score;
-        if (!lmrValid(board, moves[i], i, depth) || extensions > 0)
+        if (!lmrValid(board, moves[i], i, depth) || !pruningOk)
         {
             score = -search(board, depth - 1 + extensions, ply + 1, -beta, -alpha, start);
         }
@@ -402,21 +406,9 @@ Move AI::getBestMove(Board& board)
             break;
         }
 
-        // if value is out of bounds, re-search with new bounds
-        if (bestScoreCurrentIteration_ <= alpha || bestScoreCurrentIteration_ >= beta)
-        {
-            alpha = NEG_INF;
-            beta = POS_INF;
-            continue;  
-        }
-
         // update best move and score if the call was not broken prematurely
         bestMove = bestMoveCurrentIteration_;
         bestScore = bestScoreCurrentIteration_; 
-
-        // update alpha and beta
-        alpha = bestScore - ASPIRATION_WINDOW;
-        beta = bestScore + ASPIRATION_WINDOW; 
 
         // print info
         std::cout << "depth: " << depth;

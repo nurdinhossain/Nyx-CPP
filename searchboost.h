@@ -24,10 +24,8 @@ const int MIN_R = 3;
 const int DR = 4; // depth reduction value
 const int NULL_DEPTH = 4;
 
-// Aspiration windows
-const int ASPIRATION_WINDOW = 25;
-
 // methods for boosting search
+bool moveCausesCheck(Board& board, Move move);
 bool lmrValid(Board& board, Move move, int moveIndex, int depth);
 int lmrReduction(int moveIndex, int depth);
 bool futile(Board& board, Move move, int moveIndex, int depth, int alpha, int beta);
