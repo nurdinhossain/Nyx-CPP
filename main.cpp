@@ -4,10 +4,12 @@
 #include "evaluate.h"
 #include "searchboost.h"
 #include <iostream>
+#include <string>
 using namespace std;
 
 int main()
 {
+	// initialize board
 	Board board = Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 	std::cout << "Board initialized" << std::endl;
 	processBishopAttacks("bishopAttackTable.txt");
