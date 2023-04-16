@@ -211,8 +211,9 @@ int see(Board& board, Square initialFrom, Square initialTo)
     UInt64 occupancy = board.getFullOccupied();
 
     // loop through the attackers and sort them into a list by their value
-    std::vector<Square> attackers;
-    std::vector<Square> defenders;
+    Square attackers[MAX_PIECES];
+    Square defenders[MAX_PIECES];
+    int attackersIndex = 0, defendersIndex = 0;
     while (shallowAttackers)
     {
         // get the least significant bit
@@ -231,24 +232,24 @@ int see(Board& board, Square initialFrom, Square initialTo)
         Color color = extractColor(board.getSquareToPiece(attacker));
         if (color == board.getNextMove())
         {
-            attackers.push_back(attacker);
+            attackers[attackersIndex++] = attacker;
         }
         else
         {
-            defenders.push_back(attacker);
+            defenders[defendersIndex++] = attacker;
         }
     }
 
     // sort the attackers and defenders by value (most valuable first)
-    std::sort(attackers.begin(), attackers.end(), [&board](Square a, Square b) {
+    std::sort(attackers, attackers + attackersIndex, [&board](Square a, Square b) {
         return PIECE_VALUES[extractPiece(board.getSquareToPiece(a)) - 1] > PIECE_VALUES[extractPiece(board.getSquareToPiece(b)) - 1];
     });
-    std::sort(defenders.begin(), defenders.end(), [&board](Square a, Square b) {
+    std::sort(defenders, defenders + defendersIndex, [&board](Square a, Square b) {
         return PIECE_VALUES[extractPiece(board.getSquareToPiece(a)) - 1] > PIECE_VALUES[extractPiece(board.getSquareToPiece(b)) - 1];
     });
 
     // add the piece on initialFrom to the attackers list
-    attackers.push_back(initialFrom);
+    attackers[attackersIndex++] = initialFrom;
 
     // loop
     int score = 0;
@@ -257,13 +258,13 @@ int see(Board& board, Square initialFrom, Square initialTo)
     while (true)
     {
         // if we're in ally attacking mode and there are no attackers, break
-        if (mode == 1 && attackers.size() == 0)
+        if (mode == 1 && attackersIndex == 0)
         {
             break;
         }
 
         // if we're in enemy defending mode and there are no defenders, break
-        if (mode == 0 && defenders.size() == 0)
+        if (mode == 0 && defendersIndex == 0)
         {
             break;
         }
@@ -272,13 +273,13 @@ int see(Board& board, Square initialFrom, Square initialTo)
         Square nextPieceSquare;
         if (mode == 1)
         {
-            nextPieceSquare = attackers.back();
-            attackers.pop_back();
+            nextPieceSquare = attackers[attackersIndex - 1];
+            attackersIndex--;
         }
         else
         {
-            nextPieceSquare = defenders.back();
-            defenders.pop_back();
+            nextPieceSquare = defenders[defendersIndex - 1];
+            defendersIndex--;
         }
 
         // get the piece on the square
@@ -300,7 +301,7 @@ int see(Board& board, Square initialFrom, Square initialTo)
         }
 
         // if it is the ally's turn and the score is negative, return score because defender can stand pat
-        if (mode == 1 && score < 0)
+        if (mode == 1 && score <= 0)
         {
             return score;
         }
@@ -338,19 +339,19 @@ int see(Board& board, Square initialFrom, Square initialTo)
                 Color color = extractColor(board.getSquareToPiece(attacker));
                 if (color == board.getNextMove())
                 {
-                    attackers.push_back(attacker);
+                    attackers[attackersIndex++] = attacker;
                 }
                 else
                 {
-                    defenders.push_back(attacker);
+                    defenders[defendersIndex++] = attacker;
                 }
             }
 
             // sort the attackers and defenders by value (most valuable first)
-            std::sort(attackers.begin(), attackers.end(), [&board](Square a, Square b) {
+            std::sort(attackers, attackers + attackersIndex, [&board](Square a, Square b) {
                 return PIECE_VALUES[extractPiece(board.getSquareToPiece(a)) - 1] > PIECE_VALUES[extractPiece(board.getSquareToPiece(b)) - 1];
             });
-            std::sort(defenders.begin(), defenders.end(), [&board](Square a, Square b) {
+            std::sort(defenders, defenders + defendersIndex, [&board](Square a, Square b) {
                 return PIECE_VALUES[extractPiece(board.getSquareToPiece(a)) - 1] > PIECE_VALUES[extractPiece(board.getSquareToPiece(b)) - 1];
             });
         }
