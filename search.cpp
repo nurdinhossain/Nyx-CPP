@@ -374,6 +374,7 @@ Move AI::getBestMove(Board& board)
     Move bestMove = Move();
     int bestScore = 0;
     int depth = 1;
+    int alpha = NEG_INF, beta = POS_INF;
 
     // clear transposition table and killer moves
     transpositionTable_->clear();
@@ -391,7 +392,7 @@ Move AI::getBestMove(Board& board)
         searchStats_.clear();
 
         // search
-        search(board, depth, 0, NEG_INF, POS_INF, start);
+        search(board, depth, 0, alpha, beta, start);
 
         // check for time
         auto end = std::chrono::high_resolution_clock::now();
@@ -401,9 +402,21 @@ Move AI::getBestMove(Board& board)
             break;
         }
 
+        // if value is out of bounds, re-search with new bounds
+        if (bestScoreCurrentIteration_ <= alpha || bestScoreCurrentIteration_ >= beta)
+        {
+            alpha = NEG_INF;
+            beta = POS_INF;
+            continue;  
+        }
+
         // update best move and score if the call was not broken prematurely
         bestMove = bestMoveCurrentIteration_;
-        bestScore = bestScoreCurrentIteration_;  
+        bestScore = bestScoreCurrentIteration_; 
+
+        // update alpha and beta
+        alpha = bestScore - ASPIRATION_WINDOW;
+        beta = bestScore + ASPIRATION_WINDOW; 
 
         // print info
         std::cout << "depth: " << depth;
