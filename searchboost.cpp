@@ -301,7 +301,7 @@ int see(Board& board, Square initialFrom, Square initialTo)
         }
 
         // if it is the ally's turn and the score is negative, return score because defender can stand pat
-        if (mode == 1 && score <= 0)
+        if (mode == 1 && score < 0)
         {
             return score;
         }
