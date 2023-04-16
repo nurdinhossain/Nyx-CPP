@@ -62,14 +62,8 @@ bool futile(Board& board, Move move, int moveIndex, int depth, int alpha, int be
         return false;
     }
 
-    // if we are in check, return false
-    if (board.inCheckFull())
-    {
-        return false;
-    }
-
     // if alpha or beta is near checkmate, return false
-    if (abs(alpha) > MATE - 100 || abs(beta) > MATE - 100)
+    if (abs(alpha) > MATE - MATE_BUFFER || abs(beta) > MATE - MATE_BUFFER)
     {
         return false;
     }
@@ -96,7 +90,60 @@ bool futile(Board& board, Move move, int moveIndex, int depth, int alpha, int be
     return false;
 }
 
-int see(Board& board, Square initialFrom, Square initialTo) // bugged
+bool razorOk(Board& board, int depth, int alpha)
+{
+    // if depth is not equal to RAZOR_DEPTH, return false
+    if (depth != RAZOR_DEPTH)
+    {
+        return false;
+    }
+
+    // if alpha is near checkmate, return false
+    if (abs(alpha) > MATE - MATE_BUFFER)
+    {
+        return false;
+    }
+
+    int score = lazyEvaluate(board) + RAZOR_MARGIN;
+    return score <= alpha && popCount(board.getOccupied(static_cast<Color>(1-board.getNextMove()))) > 3;
+}
+
+bool reverseFutileOk(Board& board, int depth,  int beta)
+{
+    // if depth is greater than REVERSE_FUTILE_MAX_DEPTH, return false
+    if (depth > REVERSE_FUTILE_MAX_DEPTH)
+    {
+        return false;
+    }
+
+    // if beta is near checkmate, return false
+    if (abs(beta) > MATE - MATE_BUFFER)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool nullOk(Board& board, int depth)
+{
+    // if depth is less than NULL_DEPTH, return false
+    if (depth < NULL_DEPTH)
+    {
+        return false;
+    }
+
+    // if the board is in the endgame, return false
+    Color color = board.getNextMove();
+    if ( board.getOccupied(color) == (board.getPiece(color, KING) | board.getPiece(color, PAWN)) )
+    {
+        return false;
+    }
+
+    return true;
+}
+
+int see(Board& board, Square initialFrom, Square initialTo)
 {
     // get a bitboard of all the shallow (not considering x-ray) attackers of the "to" square
     UInt64 fullAttackers = board.getAttackersForSquare(initialTo);

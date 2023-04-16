@@ -17,8 +17,13 @@ void SearchStats::print()
     std::cout << ", ReSearches: " << reSearches;
     std::cout << ", LMR Reductions: " << lmrReductions;
     std::cout << ", Futile Reductions: " << futileReductions;
-    std::cout << ", Delta Pruned: " << deltaPruned << std::endl;
-    std::cout << ", SEE Pruned: " << seePruned << std::endl;
+    std::cout << ", Futile Reductions Q: " << futileReductionsQ;
+    std::cout << ", Delta Pruned: " << deltaPruned;
+    std::cout << ", SEE Pruned: " << seePruned;
+    std::cout << ", Null Reductions: " << nullReductions;
+    std::cout << ", Reverse Futile Pruned: " << reverseFutilePruned;
+    std::cout << ", Razor Pruned: " << razorPruned;
+    std::cout << ", Extensions: " << extensions << std::endl;
 }
 
 void SearchStats::clear()
@@ -32,8 +37,13 @@ void SearchStats::clear()
     reSearches = 0;
     lmrReductions = 0;
     futileReductions = 0;
+    futileReductionsQ = 0;
     deltaPruned = 0;
     seePruned = 0;
+    nullReductions = 0;
+    reverseFutilePruned = 0;
+    razorPruned = 0;
+    extensions = 0;
 }
 
 /* IMPLEMENT AI METHODS */
@@ -115,6 +125,71 @@ int AI::search(Board& board, int depth, int ply, int alpha, int beta, auto start
         }
     }
 
+    /******************* 
+     *     EXTENSIONS 
+     *******************/
+    int extensions = 0;
+
+    // check extension
+    if (board.getCheckers() != 0)
+    {
+        extensions++;
+    }
+
+    searchStats_.extensions += extensions;
+
+    /******************* 
+     *     PRUNING 
+     *******************/
+
+    if (extensions == 0)
+    {
+        // razoring
+        if (razorOk(board, depth, alpha))
+        {
+            searchStats_.razorPruned++;
+            depth -= 1;
+        }
+
+        // reverse futility pruning
+        if (reverseFutileOk(board, depth, beta))
+        {
+            int score = lazyEvaluate(board);
+            if (score - REVERSE_FUTILE_MARGINS[depth] >= beta)
+            {
+                searchStats_.reverseFutilePruned++;
+                return score;
+            }
+        }
+
+        // extended null move reductions
+        if (nullOk(board, depth))
+        {
+            // make null move
+            Square ep = board.makeNullMove();
+
+            // get reduction
+            int R = depth > 6 ? MAX_R : MIN_R;
+
+            // search
+            int score = -search(board, depth - R - 1, ply + 1, -beta, -beta + 1, start);
+
+            // undo null move
+            board.unmakeNullMove(ep);
+
+            // check for cutoff
+            if (score >= beta)
+            {
+                searchStats_.nullReductions++;
+                depth -= DR;
+                if (depth <= 0)
+                {
+                    return evaluate(board);
+                }
+            }
+        }
+    }
+
     // sort moves 
     scoreMoves(board, transpositionTable_, killerMoves_, moves, numMoves, ply);
     sortMoves(moves, numMoves);
@@ -127,7 +202,7 @@ int AI::search(Board& board, int depth, int ply, int alpha, int beta, auto start
     for (int i = 0; i < numMoves; i++)
     {
         // futile pruning
-        if (futile(board, moves[i], i, depth, alpha, beta))
+        if (futile(board, moves[i], i, depth, alpha, beta) && extensions == 0)
         {
             searchStats_.futileReductions++;
             continue;
@@ -138,9 +213,9 @@ int AI::search(Board& board, int depth, int ply, int alpha, int beta, auto start
 
         // search
         int score;
-        if (!lmrValid(board, moves[i], i, depth))
+        if (!lmrValid(board, moves[i], i, depth) || extensions > 0)
         {
-            score = -search(board, depth - 1, ply + 1, -beta, -alpha, start);
+            score = -search(board, depth - 1 + extensions, ply + 1, -beta, -alpha, start);
         }
         else
         {
@@ -246,12 +321,21 @@ int AI::quiesce(Board& board, int alpha, int beta)
     // loop through moves
     for (int i = 0; i < numMoves; i++)
     {
-        // see pruning
         if (moves[i].type != EN_PASSANT)
         {
-            if (see(board, moves[i].from, moves[i].to) < 0)
+            int seeScore = see(board, moves[i].from, moves[i].to);
+
+            // see pruning
+            if (seeScore < 0)
             {
                 searchStats_.seePruned++;
+                continue;
+            }
+
+            // futility pruning
+            if (score + seeScore + FUTILE_MARGIN_Q < alpha)
+            {
+                searchStats_.futileReductionsQ++;
                 continue;
             }
         }
