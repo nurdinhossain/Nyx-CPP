@@ -16,6 +16,7 @@ void SearchStats::print()
     std::cout << ", Killers Stored: " << killersStored;
     std::cout << ", ReSearches: " << reSearches;
     std::cout << ", LMR Reductions: " << lmrReductions;
+    std::cout << ", LMP Pruned: " << lmpPruned;
     std::cout << ", Futile Reductions: " << futileReductions;
     std::cout << ", Futile Reductions Q: " << futileReductionsQ;
     std::cout << ", Delta Pruned: " << deltaPruned;
@@ -36,6 +37,7 @@ void SearchStats::clear()
     killersStored = 0;
     reSearches = 0;
     lmrReductions = 0;
+    lmpPruned = 0;
     futileReductions = 0;
     futileReductionsQ = 0;
     deltaPruned = 0;
@@ -204,6 +206,13 @@ int AI::search(Board& board, int depth, int ply, int alpha, int beta, auto start
         // see if move causes check
         bool causesCheck = moveCausesCheck(board, moves[i]);
         bool pruningOk = !causesCheck && extensions == 0;
+
+        // late move pruning
+        if (lmpOk(board, moves[i], i, depth) && pruningOk)
+        {
+            searchStats_.lmpPruned++;
+            continue;
+        }
 
         // futile pruning
         if (futile(board, moves[i], i, depth, alpha, beta) && pruningOk)

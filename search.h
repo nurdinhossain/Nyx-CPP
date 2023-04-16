@@ -20,6 +20,7 @@ struct SearchStats
     int killersStored;
     int reSearches;
     int lmrReductions;
+    int lmpPruned;
     int futileReductions;
     int futileReductionsQ;
     int deltaPruned;

@@ -5,6 +5,11 @@
 
 // LMR
 const int LMR_LIMIT = 4;
+const int LMR_MIN_DEPTH = 3;
+
+// Late move pruning
+const int LMP_MAX_DEPTH = 3;
+const int LMP_MAX_MOVES[] = { 0, 7, 15, 25 };
 
 // Futility pruning
 const int FUTILE_MAX_DEPTH = 2;
@@ -31,6 +36,7 @@ const int MAX_PIECES = 16;
 // methods for boosting search
 bool moveCausesCheck(Board& board, Move move);
 bool lmrValid(Board& board, Move move, int moveIndex, int depth);
+bool lmpOk(Board& board, Move move, int moveIndex, int depth);
 int lmrReduction(int moveIndex, int depth);
 bool futile(Board& board, Move move, int moveIndex, int depth, int alpha, int beta);
 bool razorOk(Board& board, int depth, int alpha);

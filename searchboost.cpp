@@ -64,6 +64,29 @@ bool moveCausesCheck(Board& board, Move move)
     return false;
 }
 
+bool lmpOk(Board& board, Move move, int moveIndex, int depth)
+{
+    // if depth is greater than LMP_MAX_DEPTH, return false
+    if (depth > LMP_MAX_DEPTH)
+    {
+        return false;
+    }
+
+    // if move is not quiet, return false
+    if (move.type != QUIET)
+    {
+        return false;
+    }
+
+    // if moveIndex is below lmp limit for this depth, return false
+    if (moveIndex < LMP_MAX_MOVES[depth])
+    {
+        return false;
+    }
+
+    return true;
+}
+
 bool lmrValid(Board& board, Move move, int moveIndex, int depth)
 {
     // if moveIndex is greater than LMR_LIMIT, return false
@@ -73,7 +96,7 @@ bool lmrValid(Board& board, Move move, int moveIndex, int depth)
     }
 
     // if depth is less than 3, return false
-    if (depth < 3)
+    if (depth < LMR_MIN_DEPTH)
     {
         return false;
     }
