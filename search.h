@@ -6,7 +6,7 @@
 const int MAX_DEPTH = 64;
 const int MAX_MOVES = 256;
 const int MAX_MOVES_ATTACK = 64;
-const int MAX_TIME = 10;
+const int MAX_TIME = 20;
 const int KILLER_MAX_PLY = 64;
 
 // struct for gathering statistics about the search

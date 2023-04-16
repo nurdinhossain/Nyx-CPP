@@ -57,7 +57,13 @@ bool futile(Board& board, Move move, int moveIndex, int depth, int alpha, int be
     }
 
     // if move is not quiet, return false
-    if (move.type != QUIET && move.type != KING_CASTLE && move.type != QUEEN_CASTLE)
+    if (move.type != QUIET)
+    {
+        return false;
+    }
+
+    // if piece moved is a pawn, return false
+    if (extractPiece(board.getSquareToPiece(move.from)) == PAWN)
     {
         return false;
     }
