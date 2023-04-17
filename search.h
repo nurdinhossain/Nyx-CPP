@@ -29,6 +29,7 @@ struct SearchStats
     int reverseFutilePruned;
     int razorPruned;
     int extensions;
+    int iidHits;
 
     // print and clear methods
     void print();

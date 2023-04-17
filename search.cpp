@@ -24,7 +24,8 @@ void SearchStats::print()
     std::cout << ", Null Reductions: " << nullReductions;
     std::cout << ", Reverse Futile Pruned: " << reverseFutilePruned;
     std::cout << ", Razor Pruned: " << razorPruned;
-    std::cout << ", Extensions: " << extensions << std::endl;
+    std::cout << ", Extensions: " << extensions;
+    std::cout << ", IID Hits: " << iidHits << std::endl;
 }
 
 void SearchStats::clear()
@@ -46,6 +47,7 @@ void SearchStats::clear()
     reverseFutilePruned = 0;
     razorPruned = 0;
     extensions = 0;
+    iidHits = 0;
 }
 
 /* IMPLEMENT AI METHODS */
@@ -192,6 +194,22 @@ int AI::search(Board& board, int depth, int ply, int alpha, int beta, auto start
         }
     }
 
+    /******************************
+     * INTERNAL ITERATIVE DEEPENING 
+     ******************************/
+    if (ttScore == NEG_INF && depth > MIN_IID_DEPTH)
+    {
+        // search with reduced depth
+        search(board, depth - IID_DR, ply, alpha, beta, start);
+
+        // check if the tt entry is now valid
+        ttScore = transpositionTable_->getScore(board.getCurrentHash(), depth, ply, alpha, beta);
+        if (ttScore != NEG_INF)
+        {
+            searchStats_.iidHits++;
+        }
+    }
+
     // sort moves 
     scoreMoves(board, transpositionTable_, killerMoves_, moves, numMoves, ply);
     sortMoves(moves, numMoves);
@@ -199,6 +217,10 @@ int AI::search(Board& board, int depth, int ply, int alpha, int beta, auto start
     // initialize transposition flag and best move
     Flag flag = UPPER_BOUND;
     Move bestMove = moves[0];
+
+    /******************* 
+     *     SEARCH 
+     *******************/
 
     // loop through moves
     for (int i = 0; i < numMoves; i++)
