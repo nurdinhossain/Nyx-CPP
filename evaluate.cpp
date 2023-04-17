@@ -9,6 +9,20 @@ int lazyEvaluate(Board& board)
 
     // material
     int openingScore = board.getMaterial(WHITE) - board.getMaterial(BLACK);
+
+    // adjust knight and rook values based on pawn count
+    int whitePawnCount = board.getPieceCount(WHITE, PAWN);
+    int blackPawnCount = board.getPieceCount(BLACK, PAWN);
+    int whiteKnightCount = board.getPieceCount(WHITE, KNIGHT);
+    int blackKnightCount = board.getPieceCount(BLACK, KNIGHT);
+    int whiteRookCount = board.getPieceCount(WHITE, ROOK);
+    int blackRookCount = board.getPieceCount(BLACK, ROOK);
+    openingScore -= (8 - whitePawnCount) * whiteKnightCount * KNIGHT_DECREASE_WITH_PAWN_LOSS;
+    openingScore += (8 - blackPawnCount) * blackKnightCount * KNIGHT_DECREASE_WITH_PAWN_LOSS;
+    openingScore += (8 - whitePawnCount) * whiteRookCount * ROOK_INCREASE_WITH_PAWN_LOSS;
+    openingScore -= (8 - blackPawnCount) * blackRookCount * ROOK_INCREASE_WITH_PAWN_LOSS;
+
+    // ensure endgame score equals opening score for material
     int endgameScore = openingScore;
 
     // bishop pair
@@ -22,6 +36,14 @@ int lazyEvaluate(Board& board)
         openingScore -= BISHOP_PAIR;
         endgameScore -= BISHOP_PAIR;
     }
+
+    // king score
+    int whiteOpeningKingScore = 0, whiteEndgameKingScore = 0;
+    int blackOpeningKingScore = 0, blackEndgameKingScore = 0;
+    kingScore(board, WHITE, whiteOpeningKingScore, whiteEndgameKingScore);
+    kingScore(board, BLACK, blackOpeningKingScore, blackEndgameKingScore);
+    openingScore += whiteOpeningKingScore - blackOpeningKingScore;
+    endgameScore += whiteEndgameKingScore - blackEndgameKingScore;
 
     // tempo bonus
     openingScore += TEMPO_BONUS * (board.getNextMove() == WHITE ? 1 : -1);
@@ -44,15 +66,21 @@ int evaluate(Board& board)
 
     // material
     int openingScore = board.getMaterial(WHITE) - board.getMaterial(BLACK);
-    int endgameScore = openingScore;
 
-    // pawn score
-    int whiteOpeningPawnScore = 0, whiteEndgamePawnScore = 0;
-    int blackOpeningPawnScore = 0, blackEndgamePawnScore = 0;
-    pawnScore(board, WHITE, whiteOpeningPawnScore, whiteEndgamePawnScore);
-    pawnScore(board, BLACK, blackOpeningPawnScore, blackEndgamePawnScore);
-    openingScore += whiteOpeningPawnScore - blackOpeningPawnScore;
-    endgameScore += whiteEndgamePawnScore - blackEndgamePawnScore;
+    // adjust knight and rook values based on pawn count
+    int whitePawnCount = board.getPieceCount(WHITE, PAWN);
+    int blackPawnCount = board.getPieceCount(BLACK, PAWN);
+    int whiteKnightCount = board.getPieceCount(WHITE, KNIGHT);
+    int blackKnightCount = board.getPieceCount(BLACK, KNIGHT);
+    int whiteRookCount = board.getPieceCount(WHITE, ROOK);
+    int blackRookCount = board.getPieceCount(BLACK, ROOK);
+    openingScore -= (8 - whitePawnCount) * whiteKnightCount * KNIGHT_DECREASE_WITH_PAWN_LOSS;
+    openingScore += (8 - blackPawnCount) * blackKnightCount * KNIGHT_DECREASE_WITH_PAWN_LOSS;
+    openingScore += (8 - whitePawnCount) * whiteRookCount * ROOK_INCREASE_WITH_PAWN_LOSS;
+    openingScore -= (8 - blackPawnCount) * blackRookCount * ROOK_INCREASE_WITH_PAWN_LOSS;
+
+    // ensure endgame score equals opening score for material
+    int endgameScore = openingScore;
 
     // bishop pair
     if (hasBishopPair(board, WHITE))
@@ -69,17 +97,13 @@ int evaluate(Board& board)
     // knight outpost
     openingScore += knightOutpostScore(board, WHITE) - knightOutpostScore(board, BLACK);
 
-    // adjust knight and rook values based on pawn count
-    int whitePawnCount = board.getPieceCount(WHITE, PAWN);
-    int blackPawnCount = board.getPieceCount(BLACK, PAWN);
-    int whiteKnightCount = board.getPieceCount(WHITE, KNIGHT);
-    int blackKnightCount = board.getPieceCount(BLACK, KNIGHT);
-    int whiteRookCount = board.getPieceCount(WHITE, ROOK);
-    int blackRookCount = board.getPieceCount(BLACK, ROOK);
-    openingScore -= (8 - whitePawnCount) * whiteKnightCount * KNIGHT_DECREASE_WITH_PAWN_LOSS;
-    openingScore += (8 - blackPawnCount) * blackKnightCount * KNIGHT_DECREASE_WITH_PAWN_LOSS;
-    openingScore += (8 - whitePawnCount) * whiteRookCount * ROOK_INCREASE_WITH_PAWN_LOSS;
-    openingScore -= (8 - blackPawnCount) * blackRookCount * ROOK_INCREASE_WITH_PAWN_LOSS;
+    // pawn score
+    int whiteOpeningPawnScore = 0, whiteEndgamePawnScore = 0;
+    int blackOpeningPawnScore = 0, blackEndgamePawnScore = 0;
+    pawnScore(board, WHITE, whiteOpeningPawnScore, whiteEndgamePawnScore);
+    pawnScore(board, BLACK, blackOpeningPawnScore, blackEndgamePawnScore);
+    openingScore += whiteOpeningPawnScore - blackOpeningPawnScore;
+    endgameScore += whiteEndgamePawnScore - blackEndgamePawnScore;
 
     // rook score
     int whiteOpeningRookScore = 0, whiteEndgameRookScore = 0;
@@ -118,6 +142,21 @@ bool hasBishopPair(Board& board, Color color)
 }
 
 // knight
+bool isHole(Board& board, Color color, Square square)
+{
+    // get frontspan of knight 
+    int file = square % 8, rank = square / 8;
+    UInt64 frontSpan = color == WHITE ? SQUARES_ABOVE_WHITE_PAWNS[rank] : SQUARES_BELOW_BLACK_PAWNS[rank];
+    frontSpan &= (NEIGHBORING_FILES[file] ^ FILE_MASKS[file]);
+
+    // if knight can't ever be attacked by a pawn, return true
+    UInt64 enemyPawns = board.getPiece(static_cast<Color>(1-color), PAWN);
+    if (!(frontSpan & enemyPawns))
+        return true;
+
+    return false;
+}
+
 bool isKnightOutpost(Board& board, Color color, Square square)
 {
     // get pawn attacks of opposte color on this square and check if it is defended by same color pawn
@@ -125,15 +164,6 @@ bool isKnightOutpost(Board& board, Color color, Square square)
 
     // check if there is a pawn on the square and knight is on enemy side
     return (enemyPawnAttack & board.getPiece(color, PAWN)) && (SIDES[1-color] & (1ULL << square));
-}
-
-bool isKnightOnHole(Board& board, Color color, Square square)
-{
-    // get pawn attacks of current color on this square and check if it is attacked by opposite color pawn
-    UInt64 friendlyPawnAttack = PAWN_ATTACKS[color][square];
-
-    // check if there is a pawn on the square
-    return !(friendlyPawnAttack & board.getPiece(static_cast<Color>(1 - color), PAWN));
 }
 
 int knightOutpostScore(Board& board, Color color)
@@ -148,10 +178,9 @@ int knightOutpostScore(Board& board, Color color)
         if (isKnightOutpost(board, color, square))
         {
             score += KNIGHT_OUTPOST;
-            if (isKnightOnHole(board, color, square))
-            {
-                score += KNIGHT_OUTPOST_ON_HOLE_BONUS;
-            }
+
+            if (isHole(board, color, square))
+                score += KNIGHT_OUTPOST_ON_HOLE;
         }
         knights &= knights - 1;
     }
@@ -160,6 +189,24 @@ int knightOutpostScore(Board& board, Color color)
 }
 
 // rook
+bool openFile(Board& board, Color color, int file)
+{
+    Color enemy = static_cast<Color>(1 - color);
+    UInt64 allyPawns = board.getPiece(color, PAWN), enemyPawns = board.getPiece(enemy, PAWN);
+
+    // return true if there are no pawns on the file
+    return !((allyPawns | enemyPawns) & FILE_MASKS[file]);
+}
+
+bool halfOpenFile(Board& board, Color color, int file)
+{
+    Color enemy = static_cast<Color>(1 - color);
+    UInt64 allyPawns = board.getPiece(color, PAWN), enemyPawns = board.getPiece(enemy, PAWN);
+
+    // return true if we don't have a pawn but enemy does
+    return !(allyPawns & FILE_MASKS[file]) && (enemyPawns & FILE_MASKS[file]);
+}
+
 bool kingBlockRook(Board& board, Color color, Square rookSquare)
 {
     // get king square
@@ -212,48 +259,21 @@ void rookScore(Board& board, Color color, int& openingScore, int& endgameScore)
     {
         Square square = static_cast<Square>(lsb(rooks));
 
-        // check for 7th rank
-        int rank = square / 8, file = square % 8;
-        if (color == WHITE && rank == 6)
-        {
-            openingScore += ROOK_ON_SEVENTH;
-            endgameScore += ROOK_ON_SEVENTH;
-        }
-        else if (color == BLACK && rank == 1)
-        {
-            openingScore += ROOK_ON_SEVENTH;
-            endgameScore += ROOK_ON_SEVENTH;
-        }
-
-        // check if rook is trapped by king
-        if (kingBlockRook(board, color, square))
-        {
-            openingScore -= KING_BLOCK_ROOK_PENALTY;
-        }
-
-        // check for open/half open file
-        UInt64 rookAttack = lookupRookAttack(square, board.getFullOccupied() ^ (1ULL << square));
-        UInt64 fileMask = FILE_MASKS[file];
-        int fileCount = popCount(rookAttack & fileMask & ~(board.getFullOccupied()));
-        if (fileCount >= 6)
+        // check if rook is on open file or half open file
+        int file = square % 8;
+        if (openFile(board, color, file))
         {
             openingScore += ROOK_OPEN_FILE;
-
-            if (file == 0 || file == 7)
-            {
-                openingScore += ROOK_CONTROL_AH_FILE;
-            }
         }
-        else if (fileCount >= 4)
+        else if (halfOpenFile(board, color, file))
         {
             openingScore += ROOK_HALF_OPEN_FILE;
         }
 
-        // check for connected rooks
-        if (rookAttack & board.getPiece(color, ROOK))
+        // check if rook is blocked by king
+        if (kingBlockRook(board, color, square))
         {
-            openingScore += ROOKS_CONNECTED / 2;
-            endgameScore += ROOKS_CONNECTED / 2;
+            openingScore -= KING_BLOCK_ROOK_PENALTY;
         }
 
         rooks &= rooks - 1;
@@ -261,27 +281,72 @@ void rookScore(Board& board, Color color, int& openingScore, int& endgameScore)
 }
 
 // pawn
-bool isPassedPawn(Board& board, Color color, Square square)
+bool isPassed(Board& board, Color color, Square square)
 {
     int rank = square / 8, file = square % 8;
     UInt64 neighboringFiles = NEIGHBORING_FILES[file];
     UInt64 frontSpan = color == WHITE ? SQUARES_ABOVE_WHITE_PAWNS[rank] : SQUARES_BELOW_BLACK_PAWNS[rank];
 
-    return !(frontSpan & neighboringFiles & board.getPiece(static_cast<Color>(1 - color), PAWN));
-}
-
-bool pawnIsObstructed(Board& board, Color color, Square square)
-{
-    int rank = square / 8, file = square % 8;
-    UInt64 currentFile = FILE_MASKS[file];
-    UInt64 frontSpan = color == WHITE ? SQUARES_ABOVE_WHITE_PAWNS[rank] : SQUARES_BELOW_BLACK_PAWNS[rank];
-
-    if (SIDES[color] & (1ULL << square))
+    // if pawn is obstructed by ally pawns, it is not passed
+    if (frontSpan & FILE_MASKS[file] & board.getPiece(color, PAWN))
     {
         return false;
     }
 
-    return frontSpan & currentFile & board.getFullOccupied();
+    return !(frontSpan & neighboringFiles & board.getPiece(static_cast<Color>(1 - color), PAWN));
+}
+
+bool isProtected(Board& board, Color color, Square square)
+{
+    return PAWN_ATTACKS[1 - color][square] & board.getPiece(color, PAWN);
+} 
+
+bool isOutside(Board& board, Color color, Square square)
+{
+    int file = square % 8;
+    return file == 0 || file == 7;
+}
+
+bool isIsolated(Board& board, Color color, Square square)
+{
+    int file = square % 8;
+    UInt64 neighboringFiles = NEIGHBORING_FILES[file] ^ FILE_MASKS[file];
+    return !(neighboringFiles & board.getPiece(color, PAWN));
+}
+
+bool isBackward(Board& board, Color color, Square square)
+{
+    // get the backspan of the pawn
+    int rank = square / 8;
+    UInt64 backSpan = color == WHITE ? SQUARES_BELOW_BLACK_PAWNS[rank] : SQUARES_ABOVE_WHITE_PAWNS[rank];
+    UInt64 neighboringFiles = NEIGHBORING_FILES[square % 8] ^ FILE_MASKS[square % 8];
+    if (backSpan & neighboringFiles & board.getPiece(color, PAWN))
+    {
+        return false;
+    }
+
+    // get the stop square of the pawn
+    Square stopSquare = color == WHITE ? static_cast<Square>(square + 8) : static_cast<Square>(square - 8);
+
+    // if stop square is protected by ally pawn, then it is not backward
+    if (isProtected(board, color, stopSquare))
+    {
+        return false;
+    }
+
+    // if stop square is not attacked by enemy pawn, then it is not backward
+    if (!isProtected(board, static_cast<Color>(1 - color), stopSquare))
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool isDoubled(Board& board, Color color, Square square)
+{
+    int file = square % 8;
+    return popCount(FILE_MASKS[file] & board.getPiece(color, PAWN)) > 1;
 }
 
 void pawnScore(Board& board, Color color, int& openingScore, int& endgameScore)
@@ -291,46 +356,44 @@ void pawnScore(Board& board, Color color, int& openingScore, int& endgameScore)
     while (pawns)
     {
         Square square = static_cast<Square>(lsb(pawns));
-        int file = square % 8;
 
-        // unprotected pawn
-        bool isProtected = PAWN_ATTACKS[1-color][square] & board.getPiece(color, PAWN);
-        if (!isProtected)
-        {
-            openingScore -= UNPROTECTED_PAWN_PENALTY;
-        }
-
-        // check for passed pawns
-        if (isPassedPawn(board, color, square))
+        // check if pawn is passed
+        if (isPassed(board, color, square))
         {
             openingScore += PASSED_PAWN;
             endgameScore += PASSED_PAWN;
 
-            // protected passed pawn
-            if (isProtected)
-            {
-                openingScore += PROTECTED_PASSED_PAWN;
-                endgameScore += PROTECTED_PASSED_PAWN;
-            }
-
-            // outside passed pawn
-            if (file == 0 || file == 7)
+            // check if pawn is outside
+            if (isOutside(board, color, square))
             {
                 endgameScore += OUTSIDE_PASSED_PAWN;
             }
 
-            // unobstructed passed pawn
-            if (!pawnIsObstructed(board, color, square))
+            // check if pawn is protected
+            if (isProtected(board, color, square))
             {
-                endgameScore += UNOBSTRUCTED_PASSED_PAWN;
+                openingScore += PROTECTED_PASSED_PAWN;
+                endgameScore += PROTECTED_PASSED_PAWN;
             }
+        }
 
-            // isolated pawn
-            UInt64 adjacentFiles = NEIGHBORING_FILES[file] ^ FILE_MASKS[file];
-            if (!(adjacentFiles & board.getPiece(color, PAWN)))
-            {
-                openingScore -= ISOLATED_PAWN_PENALTY;
-            }
+        // check if pawn is isolated
+        if (isIsolated(board, color, square))
+        {
+            openingScore -= ISOLATED_PAWN_PENALTY;
+        }
+
+        // check if pawn is backward
+        else if (isBackward(board, color, square))
+        {
+            openingScore -= BACKWARD_PAWN_PENALTY;
+            endgameScore -= BACKWARD_PAWN_PENALTY;
+        }
+
+        // check if pawn is doubled
+        if (isDoubled(board, color, square))
+        {
+            openingScore -= DOUBLED_PAWN_PENALTY / 2;
         }
 
         pawns &= pawns - 1;
@@ -356,45 +419,56 @@ void kingScore(Board& board, Color color, int& openingScore, int& endgameScore)
 
     // check for king on open file
     int file = kingIndex % 8;
-    UInt64 rookAttackFromKingSquare = lookupRookAttack(kingIndex, board.getFullOccupied() ^ (1ULL << kingIndex));
-    UInt64 fileMask = FILE_MASKS[file];
-    int fileCount = popCount(rookAttackFromKingSquare & fileMask & ~(board.getFullOccupied()));
-    if (fileCount >= 5)
+    if (openFile(board, color, file))
     {
         openingScore -= KING_OPEN_FILE_PENALTY;
+    }
+    else if (halfOpenFile(board, color, file))
+    {
+        openingScore -= KING_HALF_OPEN_FILE_PENALTY;
     }
 
     // check for king next to open file
     if (file == 0)
     {
-        Square adjacentSquare = static_cast<Square>(kingIndex + 1);
-        UInt64 rookAttackFromAdjacentSquare = lookupRookAttack(adjacentSquare, board.getFullOccupied() & ~(1ULL << adjacentSquare));
-        int adjacentFileCount = popCount(rookAttackFromAdjacentSquare & FILE_MASKS[adjacentSquare % 8] & ~(board.getFullOccupied()));
-        if (adjacentFileCount >= 5)
+        if (openFile(board, color, 1))
         {
             openingScore -= KING_NEXT_TO_OPEN_FILE_PENALTY;
+        }
+        else if (halfOpenFile(board, color, 1))
+        {
+            openingScore -= KING_NEXT_TO_HALF_OPEN_FILE_PENALTY;
         }
     }
     else if (file == 7)
     {
-        Square adjacentSquare = static_cast<Square>(kingIndex - 1);
-        UInt64 rookAttackFromAdjacentSquare = lookupRookAttack(adjacentSquare, board.getFullOccupied() & ~(1ULL << adjacentSquare));
-        int adjacentFileCount = popCount(rookAttackFromAdjacentSquare & FILE_MASKS[adjacentSquare % 8] & ~(board.getFullOccupied()));
-        if (adjacentFileCount >= 5)
+        if (openFile(board, color, 6))
         {
             openingScore -= KING_NEXT_TO_OPEN_FILE_PENALTY;
         }
-    }
-    else {
-        Square adjacentSquares[] = { static_cast<Square>(kingIndex + 1), static_cast<Square>(kingIndex - 1) };
-        for (Square adjacentSquare : adjacentSquares)
+        else if (halfOpenFile(board, color, 6))
         {
-            UInt64 rookAttackFromAdjacentSquare = lookupRookAttack(adjacentSquare, board.getFullOccupied() & ~(1ULL << adjacentSquare));
-            int adjacentFileCount = popCount(rookAttackFromAdjacentSquare & FILE_MASKS[adjacentSquare % 8] & ~(board.getFullOccupied()));
-            if (adjacentFileCount >= 5)
-            {
-                openingScore -= KING_NEXT_TO_OPEN_FILE_PENALTY;
-            }
+            openingScore -= KING_NEXT_TO_HALF_OPEN_FILE_PENALTY;
+        }
+    }
+    else
+    {
+        if (openFile(board, color, file - 1))
+        {
+            openingScore -= KING_NEXT_TO_OPEN_FILE_PENALTY;
+        }
+        else if (halfOpenFile(board, color, file - 1))
+        {
+            openingScore -= KING_NEXT_TO_HALF_OPEN_FILE_PENALTY;
+        }
+
+        if (openFile(board, color, file + 1))
+        {
+            openingScore -= KING_NEXT_TO_OPEN_FILE_PENALTY;
+        }
+        else if (halfOpenFile(board, color, file + 1))
+        {
+            openingScore -= KING_NEXT_TO_HALF_OPEN_FILE_PENALTY;
         }
     }
 }

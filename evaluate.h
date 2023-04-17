@@ -24,34 +24,33 @@ enum SCORE
     MATE_BUFFER = 999,
 
     // pawn values
-    PASSED_PAWN = 40,
-    PROTECTED_PASSED_PAWN = 15,
-    OUTSIDE_PASSED_PAWN = 40,
-    UNOBSTRUCTED_PASSED_PAWN = 20,
+    PASSED_PAWN = 60,
+    PROTECTED_PASSED_PAWN = 20,
+    OUTSIDE_PASSED_PAWN = 20,
+    BACKWARD_PAWN_PENALTY = 10,
     ISOLATED_PAWN_PENALTY = 15,
-    UNPROTECTED_PAWN_PENALTY = 5,
+    DOUBLED_PAWN_PENALTY = 8,
 
     // knight values
-    KNIGHT_DECREASE_WITH_PAWN_LOSS = 5,
+    KNIGHT_DECREASE_WITH_PAWN_LOSS = 8,
     KNIGHT_OUTPOST = 10,
-    KNIGHT_OUTPOST_ON_HOLE_BONUS = 8,
+    KNIGHT_OUTPOST_ON_HOLE = 5,
 
     // bishop values
     BISHOP_PAIR = 10,
 
     // rook values
-    ROOK_INCREASE_WITH_PAWN_LOSS = 4,
-    ROOK_OPEN_FILE = 25,
-    ROOK_CONTROL_AH_FILE = 15,
-    ROOK_HALF_OPEN_FILE = 9,
-    ROOK_ON_SEVENTH = 10,
-    ROOKS_CONNECTED = 12,
+    ROOK_INCREASE_WITH_PAWN_LOSS = 8,
+    ROOK_OPEN_FILE = 30,
+    ROOK_HALF_OPEN_FILE = 18,
 
     // king values
     KING_BLOCK_ROOK_PENALTY = 20,
-    KING_OPEN_FILE_PENALTY = 50,
+    KING_OPEN_FILE_PENALTY = 60,
+    KING_HALF_OPEN_FILE_PENALTY = 40,
     KING_NEXT_TO_OPEN_FILE_PENALTY = 35,
-    PAWN_SHIELD = 3,
+    KING_NEXT_TO_HALF_OPEN_FILE_PENALTY = 25,
+    PAWN_SHIELD = 5,
 
     // other scores
     TEMPO_BONUS = 5
@@ -67,17 +66,23 @@ int evaluate(Board& board);
 bool hasBishopPair(Board& board, Color color);
 
 // knight stuff
+bool isHole(Board& board, Color color, Square square);
 bool isKnightOutpost(Board& board, Color color, Square square);
-bool isKnightOnHole(Board& board, Color color, Square square);
 int knightOutpostScore(Board& board, Color color);
 
 // rook stuff
-void rookScore(Board& board, Color color, int& openingScore, int& endgameScore);
+bool openFile(Board& board, Color color, int file);
+bool halfOpenFile(Board& board, Color color, int file);
 bool kingBlockRook(Board& board, Color color, Square rookSquare);
+void rookScore(Board& board, Color color, int& openingScore, int& endgameScore);
 
 // pawn stuff
-bool isPassedPawn(Board& board, Color color, Square square);
-bool pawnIsObstructed(Board& board, Color color, Square square);
+bool isPassed(Board& board, Color color, Square square);
+bool isProtected(Board& board, Color color, Square square);
+bool isOutside(Board& board, Color color, Square square);
+bool isIsolated(Board& board, Color color, Square square);
+bool isBackward(Board& board, Color color, Square square);
+bool isDoubled(Board& board, Color color, Square square);
 void pawnScore(Board& board, Color color, int& openingScore, int& endgameScore);
 
 // king stuff

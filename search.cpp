@@ -86,7 +86,7 @@ int AI::search(Board& board, int depth, int ply, int alpha, int beta, auto start
     }
 
     // check for threefold repetition
-    if (board.getHistory() > 1)
+    if (ply > 0 && board.getHistory() > 1)
     {
         return DRAW;
     }
@@ -197,14 +197,15 @@ int AI::search(Board& board, int depth, int ply, int alpha, int beta, auto start
     /******************************
      * INTERNAL ITERATIVE DEEPENING 
      ******************************/
-    if (ttScore == NEG_INF && depth > MIN_IID_DEPTH)
+    Move ttMove = transpositionTable_->getMove(board.getCurrentHash());
+    if ((ttMove.from == ttMove.to) && depth > MIN_IID_DEPTH)
     {
         // search with reduced depth
         search(board, depth - IID_DR, ply, alpha, beta, start);
 
         // check if the tt entry is now valid
-        ttScore = transpositionTable_->getScore(board.getCurrentHash(), depth, ply, alpha, beta);
-        if (ttScore != NEG_INF)
+        ttMove = transpositionTable_->getMove(board.getCurrentHash());
+        if (!(ttMove.from == ttMove.to))
         {
             searchStats_.iidHits++;
         }

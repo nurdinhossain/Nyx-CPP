@@ -4,7 +4,7 @@
 // constants
 
 // LMR
-const int LMR_LIMIT = 4;
+const int LMR_LIMIT = 3;
 const int LMR_MIN_DEPTH = 3;
 
 // Late move pruning

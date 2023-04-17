@@ -21,8 +21,6 @@ int main()
 	std::cout << "Board initialized" << std::endl;
 	processBishopAttacks("bishopAttackTable.txt");
 	processRookAttacks("rookAttackTable.txt");
-
-	std::cout << evaluate(board) << std::endl;
 	
 	// get best move
 	AI ai = AI();
