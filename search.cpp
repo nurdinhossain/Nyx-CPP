@@ -140,7 +140,7 @@ int AI::search(Board& board, int depth, int ply, int alpha, int beta, auto start
         extensions++;
     }
 
-    searchStats_.extensions += extensions;
+    //searchStats_.extensions += extensions;
 
     /******************* 
      *     PRUNING 
@@ -251,7 +251,7 @@ int AI::search(Board& board, int depth, int ply, int alpha, int beta, auto start
         int score;
         if (!lmrValid(board, moves[i], i, depth) || !pruningOk)
         {
-            score = -search(board, depth - 1 + extensions, ply + 1, -beta, -alpha, start);
+            score = -search(board, depth - 1, ply + 1, -beta, -alpha, start); // removed extensions here
         }
         else
         {

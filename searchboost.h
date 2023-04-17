@@ -35,7 +35,7 @@ const int MAX_PIECES = 16;
 
 // Internal iterative deepening
 const int MIN_IID_DEPTH = 5;
-const int IID_DR = 2;
+const int IID_DR = 3;
 
 // methods for boosting search
 bool moveCausesCheck(Board& board, Move move);
