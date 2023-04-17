@@ -25,20 +25,23 @@ void scoreMoves(Board& board, TranspositionTable* tt, Move killerMoves[][2], Mov
             Piece pieceMoved = extractPiece(piece);
 
             // score move 
-            moves[i].score += MVV_LVA[move.pieceTaken-1][pieceMoved-1] + CAPTURE_OFFSET;
+            moves[i].score = MVV_LVA[move.pieceTaken-1][pieceMoved-1] + CAPTURE_OFFSET;
+
+            // check for promotion capture
+            if (move.type >= KNIGHT_PROMOTION_CAPTURE && move.type <= QUEEN_PROMOTION_CAPTURE)
+            {
+                // score move based on promotion piece
+                moves[i].score += PIECE_VALUES[move.type - 9] + PROMO_OFFSET;
+            }
+
+            continue;
         }
 
         // check for promotion
         if (move.type >= KNIGHT_PROMOTION && move.type <= QUEEN_PROMOTION)
         {
             // score move based on promotion piece
-            moves[i].score += PIECE_VALUES[move.type - 5] + PROMO_OFFSET;
-            continue;
-        }
-        else if (move.type >= KNIGHT_PROMOTION_CAPTURE && move.type <= QUEEN_PROMOTION_CAPTURE)
-        {
-            // score move based on promotion piece
-            moves[i].score += PIECE_VALUES[move.type - 9] + PROMO_OFFSET;
+            moves[i].score = PIECE_VALUES[move.type - 5] + PROMO_OFFSET;
             continue;
         }
 
@@ -65,7 +68,7 @@ void scoreMoves(Board& board, TranspositionTable* tt, Move killerMoves[][2], Mov
         int phase = board.getPhase();
         int fromScore = (openingFrom * (256 - phase) + endgameFrom * phase) / 256;
         int toScore = (openingTo * (256 - phase) + endgameTo * phase) / 256;
-        moves[i].score += toScore - fromScore;
+        moves[i].score = toScore - fromScore;  
     }
 }
 

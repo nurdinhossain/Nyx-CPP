@@ -252,8 +252,8 @@ int AI::search(Board& board, int depth, int ply, int alpha, int beta, auto start
             // store in transposition table
             transpositionTable_->store(board.getCurrentHash(), LOWER_BOUND, depth, ply, score, moves[i]);
 
-            // store killer move if quiet move
-            if (moves[i].type == QUIET || moves[i].type == DOUBLE_PAWN_PUSH)
+            // store killer move/update history if quiet move
+            if (moves[i].type <= QUEEN_CASTLE)
             {
                 Move firstKiller = killerMoves_[ply][0];
 
@@ -396,7 +396,7 @@ Move AI::getBestMove(Board& board)
         killerMoves_[i][0] = Move();
         killerMoves_[i][1] = Move();
     }
-    
+
     // iterative deepening with time
     auto start = std::chrono::high_resolution_clock::now();
     while (depth <= MAX_DEPTH)
