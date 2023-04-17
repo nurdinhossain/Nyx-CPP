@@ -33,11 +33,13 @@ void scoreMoves(Board& board, TranspositionTable* tt, Move killerMoves[][2], Mov
         {
             // score move based on promotion piece
             moves[i].score += PIECE_VALUES[move.type - 5] + PROMO_OFFSET;
+            continue;
         }
         else if (move.type >= KNIGHT_PROMOTION_CAPTURE && move.type <= QUEEN_PROMOTION_CAPTURE)
         {
             // score move based on promotion piece
             moves[i].score += PIECE_VALUES[move.type - 9] + PROMO_OFFSET;
+            continue;
         }
 
         // check for killer move

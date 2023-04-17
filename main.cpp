@@ -9,6 +9,8 @@ using namespace std;
 
 int main()
 {
+	// r4k1r/1pP1npp1/1Pb4p/p6q/Q1p2p1b/B1P2N2/P2N2P1/R2K3R w - - 0 1 is a wonderful FEN string to test with
+
 	// get user input
 	string input;
 	cout << "Enter a FEN string: ";
