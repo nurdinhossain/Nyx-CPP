@@ -34,7 +34,7 @@ const int NULL_DEPTH = 4;
 const int MAX_PIECES = 16;
 
 // Internal iterative deepening
-const int MIN_IID_DEPTH = 4;
+const int MIN_IID_DEPTH = 5;
 const int IID_DR = 2;
 
 // methods for boosting search
