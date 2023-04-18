@@ -132,21 +132,13 @@ int AI::search(Board& board, int depth, int ply, int alpha, int beta, auto start
     /******************* 
      *     EXTENSIONS 
      *******************/
-    int extensions = 0;
-
-    // check extension
-    if (board.getCheckers() != 0)
-    {
-        extensions++;
-    }
-
-    searchStats_.extensions += extensions;
+    bool friendlyKingInCheck = board.getCheckers() != 0;
 
     /******************* 
      *     PRUNING 
      *******************/
 
-    if (extensions == 0)
+    if (!friendlyKingInCheck)
     {
         // razoring
         if (razorOk(board, depth, alpha))
@@ -228,7 +220,7 @@ int AI::search(Board& board, int depth, int ply, int alpha, int beta, auto start
     {
         // see if move causes check
         bool causesCheck = moveCausesCheck(board, moves[i]);
-        bool pruningOk = !causesCheck && extensions == 0;
+        bool pruningOk = !causesCheck && !friendlyKingInCheck;
 
         // late move pruning
         if (lmpOk(board, moves[i], i, depth) && pruningOk)
@@ -251,7 +243,7 @@ int AI::search(Board& board, int depth, int ply, int alpha, int beta, auto start
         int score;
         if (!lmrValid(board, moves[i], i, depth) || !pruningOk)
         {
-            score = -search(board, depth - 1 + extensions, ply + 1, -beta, -alpha, start);
+            score = -search(board, depth - 1, ply + 1, -beta, -alpha, start);
         }
         else
         {

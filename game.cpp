@@ -602,7 +602,7 @@ int Board::generateMoves(Move moves[], bool attackOnly, bool quietOnly)
         }
 
         // bitwise AND with the opposite color's occupancy if we're only looking for attacks
-        if (attackOnly)
+        if (attackOnly && checkers == 0)
         {
             moveBoard &= occupied[1 - nextMove];
         }
