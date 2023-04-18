@@ -24,16 +24,15 @@ int main()
 	processBishopAttacks("bishopAttackTable.txt");
 	processRookAttacks("rookAttackTable.txt");
 	
-	// perft with time
-	for (int i = 1; i <= 6; i++)
-	{
-		auto start = std::chrono::high_resolution_clock::now();
-		std::cout << "Perft " << i << ": " << board.perft(i) << std::endl;
-		auto end = std::chrono::high_resolution_clock::now();
+	// search
+	AI ai = AI();
 
-		std::chrono::duration<double> elapsed = end - start;
-		std::cout << "Time: " << elapsed.count() << "s" << std::endl;
-	}
+	// get best move
+	Move bestMove = ai.getBestMove(board);
+
+	// make move and print board
+	board.makeMove(bestMove);
+	board.print();
 
 	return 0;
 }
