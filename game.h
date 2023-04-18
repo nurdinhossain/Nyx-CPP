@@ -405,6 +405,7 @@ class Board
         Color getNextMove() const;
         Square getEnPassant() const;
         UInt64 getCurrentHash() const;
+        UInt64 getPawnHash() const;
         int getHistory() const;
         int getPieceCount(Color color, Piece piece) const;
         int getMaterial(Color color) const;
@@ -466,6 +467,7 @@ class Board
 
         // hashing
         UInt64 currentHash; // current hash
+        UInt64 pawnHash; // hash for pawns
         int size_; // size of history table
         int* history; // dynamic history table
 

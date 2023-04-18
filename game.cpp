@@ -243,6 +243,12 @@ void Board::zobristHash()
             Color color = extractColor(piece);
             Piece type = extractPiece(piece);
             currentHash ^= ZOBRIST_PIECES[color][type-1][i];
+
+            // pawn hash
+            if (type == PAWN)
+            {
+                pawnHash ^= ZOBRIST_PIECES[color][type-1][i];
+            }
         }
     }
 }
@@ -281,6 +287,11 @@ Color Board::getNextMove() const
 Square Board::getEnPassant() const
 {
     return enPassant;
+}
+
+UInt64 Board::getPawnHash() const
+{
+    return pawnHash;
 }
 
 UInt64 Board::getCurrentHash() const
@@ -852,6 +863,11 @@ void Board::togglePiece(Color color, Piece piece, Square square)
     }
 
     currentHash ^= ZOBRIST_PIECES[color][piece-1][square];
+
+    // update pawn hash
+    if (piece == Piece::PAWN) {
+        pawnHash ^= ZOBRIST_PIECES[color][piece-1][square];
+    }
 }
 
 void Board::makeQuietMove(Square from, Square to)

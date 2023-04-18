@@ -1,5 +1,6 @@
 #pragma once
 #include "game.h"
+#include "pawnhash.h"
 
 // masks
 constexpr UInt64 SIDES[2] = { 0xFFFFFFFF, 0xFFFFFFFF00000000 };
@@ -60,7 +61,7 @@ enum SCORE
 int lazyEvaluate(Board& board);
 
 // full eval function
-int evaluate(Board& board);
+int evaluate(Board& board, PawnTable* pawnTable);
 
 // bishop stuff
 bool hasBishopPair(Board& board, Color color);

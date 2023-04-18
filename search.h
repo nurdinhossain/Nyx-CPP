@@ -1,6 +1,7 @@
 #pragma once
 #include "game.h"
 #include "transposition.h"
+#include "pawnhash.h"
 
 // constants
 const int MAX_DEPTH = 64;
@@ -52,6 +53,7 @@ class AI
     private:
         // private fields
         TranspositionTable* transpositionTable_;
+        PawnTable* pawnTable_;
         Move killerMoves_[KILLER_MAX_PLY][2];
         Move bestMoveCurrentIteration_;
         int bestScoreCurrentIteration_;

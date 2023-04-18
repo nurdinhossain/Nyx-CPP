@@ -57,12 +57,18 @@ AI::AI()
 {
     // set the transposition table size
     transpositionTable_ = new TranspositionTable(TT_SIZE);
+
+    // set the pawn table size
+    pawnTable_ = new PawnTable(PAWN_HASH_SIZE);
 }
 
 AI::~AI()
 {
     // delete the transposition table
     delete transpositionTable_;
+
+    // delete the pawn table
+    delete pawnTable_;
 }
 
 // search
@@ -180,7 +186,7 @@ int AI::search(Board& board, int depth, int ply, int alpha, int beta, auto start
                 depth -= DR;
                 if (depth <= 0)
                 {
-                    return evaluate(board);
+                    return evaluate(board, pawnTable_);
                 }
             }
         }
@@ -314,7 +320,7 @@ int AI::quiesce(Board& board, int alpha, int beta)
     searchStats_.qNodes++;
 
     // evaluate board
-    int score = evaluate(board);
+    int score = evaluate(board, pawnTable_);
 
     // check for cutoff
     if (score >= beta)
