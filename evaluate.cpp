@@ -423,7 +423,27 @@ int kingPawnShieldScore(Board& board, Color color, Square square)
     UInt64 kingAttack = KING_ATTACKS[square];
     UInt64 kingFrontSpan = color == WHITE ? SQUARES_ABOVE_WHITE_PAWNS[square / 8] : SQUARES_BELOW_BLACK_PAWNS[square / 8];
 
-    return popCount(kingAttack & kingFrontSpan & board.getPiece(color, PAWN));
+    return popCount(kingSafetyArea(color, square) & board.getPiece(color, PAWN));
+}
+
+UInt64 kingSafetyArea(Color color, Square square)
+{
+    UInt64 safetyArea = KING_ATTACKS[square];
+    int rank = square / 8;
+
+    // add rank 2 ranks ahead of king
+    if (color == WHITE)
+    {
+        if (rank < 6) safetyArea |= (RANK_MASKS[rank + 2] & NEIGHBORING_FILES[square % 8]);
+        if (rank > 0) safetyArea &= ~RANK_MASKS[rank - 1];
+    }
+    else
+    {
+        if (rank > 1) safetyArea |= (RANK_MASKS[rank - 2] & NEIGHBORING_FILES[square % 8]);
+        if (rank < 7) safetyArea &= ~RANK_MASKS[rank + 1];
+    }
+
+    return safetyArea;
 }
 
 void kingScore(Board& board, Color color, int& openingScore, int& endgameScore)
@@ -431,7 +451,7 @@ void kingScore(Board& board, Color color, int& openingScore, int& endgameScore)
     // get king square   
     Square kingIndex = static_cast<Square>(lsb(board.getPiece(color, KING)));
 
-    // check for king pawn shield
+    // check for king pawn shield scaled by enemy material
     openingScore += kingPawnShieldScore(board, color, kingIndex) * PAWN_SHIELD;
 
     // check for king on open file

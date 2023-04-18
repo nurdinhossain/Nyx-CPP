@@ -23,7 +23,7 @@ int main()
 	std::cout << "Board initialized" << std::endl;
 	processBishopAttacks("bishopAttackTable.txt");
 	processRookAttacks("rookAttackTable.txt");
-	
+
 	// search
 	AI ai = AI();
 

@@ -87,5 +87,6 @@ bool isDoubled(Board& board, Color color, Square square);
 void pawnScore(Board& board, Color color, int& openingScore, int& endgameScore);
 
 // king stuff
+UInt64 kingSafetyArea(Color color, Square square);
 int kingPawnShieldScore(Board& board, Color color, Square square);
 void kingScore(Board& board, Color color, int& openingScore, int& endgameScore);
