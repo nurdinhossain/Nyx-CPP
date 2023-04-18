@@ -120,7 +120,8 @@ int AI::search(Board& board, int depth, int ply, int alpha, int beta, auto start
     // generate moves
     board.moveGenerationSetup();
     Move moves[MAX_MOVES];
-    int numMoves = board.generateMoves(moves);
+    int numMoves = 0;
+    board.generateMoves(moves, numMoves);
 
     // check for mate/stalemate
     if (numMoves == 0)
@@ -346,7 +347,8 @@ int AI::quiesce(Board& board, int alpha, int beta)
     // generate attacking moves
     board.moveGenerationSetup();
     Move moves[MAX_MOVES_ATTACK];
-    int numMoves = board.generateMoves(moves, true);
+    int numMoves = 0;
+    board.generateMoves(moves, numMoves, true, true);
 
     // sort moves
     scoreMoves(board, transpositionTable_, killerMoves_, moves, numMoves, -1);

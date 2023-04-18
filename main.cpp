@@ -5,6 +5,7 @@
 #include "searchboost.h"
 #include <iostream>
 #include <string>
+#include <chrono>
 using namespace std;
 
 int main()
@@ -23,15 +24,16 @@ int main()
 	processBishopAttacks("bishopAttackTable.txt");
 	processRookAttacks("rookAttackTable.txt");
 	
-	// get best move
-	AI ai = AI();
-	Move bestMove = ai.getBestMove(board);
+	// perft with time
+	for (int i = 1; i <= 6; i++)
+	{
+		auto start = std::chrono::high_resolution_clock::now();
+		std::cout << "Perft " << i << ": " << board.perft(i) << std::endl;
+		auto end = std::chrono::high_resolution_clock::now();
 
-	// make move
-	board.makeMove(bestMove);
-
-	// print board
-	board.print();
+		std::chrono::duration<double> elapsed = end - start;
+		std::cout << "Time: " << elapsed.count() << "s" << std::endl;
+	}
 
 	return 0;
 }

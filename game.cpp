@@ -571,14 +571,12 @@ void Board::moveGenerationSetup()
     else pinnedPiecesMG = pinned(bishopAttackFromKing, rookAttackFromKing);
 }
 
-int Board::generateMoves(Move moves[], bool attackOnly, bool quietOnly) 
+void Board::generateMoves(Move moves[], int& moveCount, bool attackOnly, bool includeChecksWithAttacks, bool quietOnly) 
 {
     /* ASSUMES THAT THE MOVE GENERATION SETUP HAS ALREADY BEEN RUN */
     UInt64 occ = occMG;
     UInt64 blockMask = blockMaskMG;
     UInt64 pinnedPieces = pinnedPiecesMG;
-
-    int moveCount = 0;
 
     UInt64 moveBoard = 0ULL;
     while (occ)
@@ -613,15 +611,32 @@ int Board::generateMoves(Move moves[], bool attackOnly, bool quietOnly)
         }
 
         // bitwise AND with the opposite color's occupancy if we're only looking for attacks
-        if (attackOnly && checkers == 0)
+        bool checkBreak = includeChecksWithAttacks & (checkers != 0);
+        if (attackOnly && !checkBreak)
         {
-            moveBoard &= occupied[1 - nextMove];
+            UInt64 attackOccupancy = occupied[1 - nextMove];
+            // if piece board is pawn board, extract promotions along with attacks
+            if (piece == Piece::PAWN)
+            {
+                UInt64 promoMask = RANK_MASKS[7 - nextMove * 7];
+                attackOccupancy |= promoMask;
+            }
+
+            moveBoard &= attackOccupancy;
         }
 
         // bitwise AND with NOT the opposite color's occupancy if we're only looking for quiet moves
         if (quietOnly)
         {
-            moveBoard &= ~occupied[1 - nextMove];
+            UInt64 attackOccupancy = occupied[1 - nextMove];
+            // if piece board is pawn board, DO NOT extract promotions or attacks
+            if (piece == Piece::PAWN)
+            {
+                UInt64 promoMask = RANK_MASKS[7 - nextMove * 7];
+                attackOccupancy |= promoMask;
+            }
+
+            moveBoard &= ~attackOccupancy;
         }
 
         // pinned pieces
@@ -799,8 +814,6 @@ int Board::generateMoves(Move moves[], bool attackOnly, bool quietOnly)
             }
         }
     }
-
-    return moveCount;
 }
 
 bool Board::isEPLegal(Square from, Square to)
@@ -1124,7 +1137,8 @@ int Board::perft(int depth)
 {
     moveGenerationSetup();
     Move moves[MAX_MOVES];
-    int moveCount = generateMoves(moves);
+    int moveCount = 0;
+    generateMoves(moves, moveCount);
 
     if (depth == 1) return moveCount;
 
