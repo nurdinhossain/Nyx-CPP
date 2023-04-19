@@ -410,7 +410,7 @@ void pawnScore(Board& board, Color color, int& openingScore, int& endgameScore)
         // check if pawn is doubled
         if (isDoubled(board, color, square))
         {
-            openingScore -= DOUBLED_PAWN_PENALTY / 2;
+            openingScore -= DOUBLED_PAWN_PENALTY;
         }
 
         pawns &= pawns - 1;

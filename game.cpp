@@ -254,6 +254,80 @@ void Board::zobristHash()
 }
 
 /* GETTERS */
+std::string Board::getFen() const
+{
+    std::string fen = "";
+    int emptyCount = 0;
+    for (int row = 7; row >= 0; row--)
+    {
+        for (int col = 7; col >= 0; col--)
+        {
+            int index = row * 8 + col;
+            int piece = squareToPiece[index];
+            if (piece == Piece::EMPTY) {
+                emptyCount++;
+            } else {
+                if (emptyCount > 0) {
+                    fen += std::to_string(emptyCount);
+                    emptyCount = 0;
+                }
+                Color color = extractColor(piece);
+                Piece type = extractPiece(piece);
+                std::string pieceString;
+                switch (type) {
+                    case Piece::PAWN:
+                        pieceString = "P";
+                        break;
+                    case Piece::ROOK:
+                        pieceString = "R";
+                        break;
+                    case Piece::KNIGHT:
+                        pieceString = "N";
+                        break;
+                    case Piece::BISHOP:
+                        pieceString = "B";
+                        break;
+                    case Piece::QUEEN:
+                        pieceString = "Q";
+                        break;
+                    case Piece::KING:
+                        pieceString = "K";
+                        break;
+                }
+                // if white, keep, if black, lowercase
+                if (color == Color::BLACK) pieceString[0] += 32;
+                fen += pieceString;
+            }
+        }
+        if (emptyCount > 0) {
+            fen += std::to_string(emptyCount);
+            emptyCount = 0;
+        }
+        if (row != 0) fen += "/";
+    }
+
+    fen += " ";
+    fen += (nextMove == Color::WHITE) ? "w" : "b";
+
+    fen += " ";
+    if (castlingRights == 0) fen += "-";
+    else {
+        if (castlingRights & WHITE_KING_SIDE) fen += "K";
+        if (castlingRights & WHITE_QUEEN_SIDE) fen += "Q";
+        if (castlingRights & BLACK_KING_SIDE) fen += "k";
+        if (castlingRights & BLACK_QUEEN_SIDE) fen += "q";
+    }
+
+    fen += " ";
+    if (enPassant == Square::NONE) fen += "-";
+    else fen += indexToSquare(enPassant);
+
+    fen += " ";
+    fen += "0 1";
+
+    return fen;
+}
+
 UInt64 Board::getPiece(Color color, Piece piece) const
 {
     return pieces[color][piece-1];

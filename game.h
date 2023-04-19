@@ -397,6 +397,7 @@ class Board
         ~Board();
 
         // getters
+        std::string getFen() const;
         UInt64 getPiece(Color color, Piece piece) const;
         UInt64 getOccupied(Color color) const;
         UInt64 getFullOccupied() const;
