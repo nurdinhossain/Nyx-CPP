@@ -17,13 +17,15 @@ int main()
 	// get user input
 	/*string input;
 	cout << "Enter a FEN string: ";
-	getline(cin, input);
+	getline(cin, input);*/
 
-	// initialize board
-	Board board = Board(input);
-	std::cout << "Board initialized" << std::endl;
+	// initialize sliding attacks
 	processBishopAttacks("bishopAttackTable.txt");
 	processRookAttacks("rookAttackTable.txt");
+
+	// initialize board
+	/*Board board = Board(input);
+	std::cout << "Board initialized" << std::endl;
 
 	std::cout << board.getFen() << std::endl;*/
 

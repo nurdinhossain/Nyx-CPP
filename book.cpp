@@ -132,10 +132,13 @@ int ambiguousMove(Board& board, Move moves[], int moveCount, Piece piece, int sq
 std::vector<std::string> processGame(std::vector<std::string> game)
 {
     // initialize board
-    Board board = Board();
+    Board board = Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 
     // initialize vector of fen strings
     std::vector<std::string> fenStrings;
+
+    // add initial fen
+    fenStrings.push_back(board.getFen());
 
     // some lookup tables
     char pieceLookup[6] = { 'P', 'N', 'B', 'R', 'Q', 'K' };
@@ -147,17 +150,9 @@ std::vector<std::string> processGame(std::vector<std::string> game)
     for (int i = 0; i < game.size(); i++)
     {
         // move generation
-        board.print();
         board.moveGenerationSetup();
         int moveCount = 0;
         board.generateMoves(realMoves, moveCount);
-
-        // display moves
-        for (int j = 0; j < moveCount; j++)
-        {
-            std::cout << indexToSquare(realMoves[j].from) << indexToSquare(realMoves[j].to) << " ";
-        }
-        std::cout << std::endl;
 
         std::string algebraicMove = game[i];
 
@@ -235,11 +230,11 @@ std::vector<std::string> processGame(std::vector<std::string> game)
             // compare recreated move to algebraic move
             if (recreatedMove == algebraicMove)
             {
-                // add fen string to vector
-                fenStrings.push_back(board.getFen());
-
                 // make move
                 board.makeMove(move);
+
+                // add fen string to vector
+                fenStrings.push_back(board.getFen());
 
                 // print move
                 std::cout << indexToSquare(from) << indexToSquare(to) << std::endl;
