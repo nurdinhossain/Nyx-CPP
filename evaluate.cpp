@@ -406,6 +406,8 @@ void pawnScore(Board& board, Color color, int& openingScore, int& endgameScore)
 {
     // loop through all pawns
     UInt64 pawns = board.getPiece(color, PAWN);
+    Square ownKingSquare = static_cast<Square>(lsb(board.getPiece(color, KING))), enemyKingSquare = static_cast<Square>(lsb(board.getPiece(static_cast<Color>(1 - color), KING)));
+    int passedPawns = 0, ownDistanceToPassedPawns = 0, enemyDistanceToPassedPawns = 0;
     while (pawns)
     {
         Square square = static_cast<Square>(lsb(pawns));
@@ -437,6 +439,14 @@ void pawnScore(Board& board, Color color, int& openingScore, int& endgameScore)
                 openingScore += PROTECTED_PASSED_PAWN;
                 endgameScore += PROTECTED_PASSED_PAWN;
             }
+
+            // add to passed pawn count
+            passedPawns++;
+
+            // add to distance to passed pawns using manhattan distance
+            int ownKingRow = ownKingSquare / 8, ownKingCol = ownKingSquare % 8, enemyKingRow = enemyKingSquare / 8, enemyKingCol = enemyKingSquare % 8, pawnRow = square / 8, pawnCol = square % 8;
+            ownDistanceToPassedPawns += abs(ownKingRow - pawnRow) + abs(ownKingCol - pawnCol);
+            enemyDistanceToPassedPawns += abs(enemyKingRow - pawnRow) + abs(enemyKingCol - pawnCol);
         }
 
         // check if pawn is isolated
@@ -459,6 +469,13 @@ void pawnScore(Board& board, Color color, int& openingScore, int& endgameScore)
         }
 
         pawns &= pawns - 1;
+    }
+
+    // punish king for being too far from ally passed pawns scaled by enemy material
+    if (passedPawns > 0)
+    {
+        endgameScore -= (ownDistanceToPassedPawns / passedPawns) * board.getMaterial(static_cast<Color>(1 - color)) * PASSED_PAWN_DISTANCE_TO_OWN_KING_PENALTY / PAWN_SHIELD_DIVISOR;
+        endgameScore += (enemyDistanceToPassedPawns / passedPawns) * board.getMaterial(static_cast<Color>(1 - color)) * PASSED_PAWN_DISTANCE_TO_ENEMY_KING_BONUS / PAWN_SHIELD_DIVISOR;
     }
 }
 

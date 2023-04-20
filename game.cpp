@@ -255,7 +255,7 @@ void Board::zobristHash()
             currentHash ^= ZOBRIST_PIECES[color][type-1][i];
 
             // pawn hash
-            if (type == PAWN)
+            if (type == PAWN || type == KING)
             {
                 pawnHash ^= ZOBRIST_PIECES[color][type-1][i];
             }
@@ -962,7 +962,7 @@ void Board::togglePiece(Color color, Piece piece, Square square)
     currentHash ^= ZOBRIST_PIECES[color][piece-1][square];
 
     // update pawn hash
-    if (piece == Piece::PAWN) {
+    if (piece == Piece::PAWN || piece == Piece::KING) {
         pawnHash ^= ZOBRIST_PIECES[color][piece-1][square];
     }
 }
