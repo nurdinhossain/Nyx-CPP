@@ -91,31 +91,7 @@ constexpr UInt64 FILLED_BOARD = 0xFFFFFFFFFFFFFFFFULL;
 constexpr int PIECE_VALUES[5] = {100, 310, 320, 500, 900};
 
 /* PIECE-SQUARE TABLES */
-constexpr int PAWN_TABLE_BLACK_OPENING[64] =
-{
-    0,  0,  0,  0,  0,  0,  0,  0,
-    40, 40, 40, 40, 40, 40, 40, 40,
-    10, 10, 15, 20, 20, 15, 10, 10,
-    5,  5, 8, 17, 17, 8,  5,  5,
-    0,  0,  0, 15, 15,  0,  0,  0,
-    5, -5,-10,  0,  0,-10, -5,  5,
-    5,  8,  8,-20,-20,  8,  8,  5,
-    0,  0,  0,  0,  0,  0,  0,  0
-};
-
-constexpr int PAWN_TABLE_BLACK_ENDGAME[64] = 
-{
-    0, 0, 0, 0, 0, 0, 0, 0,
-    60, 60, 60, 60, 60, 60, 60, 60,
-    40, 40, 40, 40, 40, 40, 40, 40,
-    30, 30, 30, 30, 30, 30, 30, 30,
-    20, 20, 20, 20, 20, 20, 20, 20,
-    10, 10, 10, 10, 10, 10, 10, 10,
-    -10, -10, -10, -10, -10, -10, -10, -10,
-    0, 0, 0, 0, 0, 0, 0, 0
-};
-
-constexpr int PAWN_TABLE_WHITE_OPENING[64] = 
+constexpr int PAWN_TABLE_OPENING[64] = 
 {
     0,  0,  0,  0,  0,  0,  0,  0,
     5,  8,  8,-20,-20,  8,  8,  5,
@@ -127,7 +103,7 @@ constexpr int PAWN_TABLE_WHITE_OPENING[64] =
     0,  0,  0,  0,  0,  0,  0,  0
 };
 
-constexpr int PAWN_TABLE_WHITE_ENDGAME[64] = 
+constexpr int PAWN_TABLE_ENDGAME[64] = 
 {
     0, 0, 0, 0, 0, 0, 0, 0,
     -10, -10, -10, -10, -10, -10, -10, -10,
@@ -139,31 +115,7 @@ constexpr int PAWN_TABLE_WHITE_ENDGAME[64] =
     0, 0, 0, 0, 0, 0, 0, 0
 };
 
-constexpr int KNIGHT_TABLE_BLACK_OPENING[64] =
-{
-    -25,-20,-15,-15,-15,-15,-20,-25,
-    -20,-10,  0,  0,  0,  0,-10,-20,
-    -15,  0, 10, 15, 15, 10,  0,-15,
-    -15,  5, 15, 20, 20, 15,  5,-15,
-    -15,  0, 15, 20, 20, 15,  0,-15,
-    -15,  5, 10, 15, 15, 10,  5,-15,
-    -20,-10,  0,  5,  5,  0,-10,-20,
-    -25,-20,-15,-15,-15,-15,-20,-25
-};
-
-constexpr int KNIGHT_TABLE_BLACK_ENDGAME[64] =
-{
-    -20,-15,-10,-10,-10,-10,-15,-20,
-    -15, -5,  5,  5,  5,  5, -5,-15,
-    -10,  5, 15, 20, 20, 15,  5,-10,
-    -10,  5, 15, 20, 20, 15,  5,-10,
-    -15,  0, 15, 20, 20, 15,  0,-15,
-    -15,  0,  5, 10, 10,  5,  0,-15,
-    -20,-10,-10,-10,-10,-10,-10,-20,
-    -40,-20,-20,-20,-20,-20,-20,-40
-};
-
-constexpr int KNIGHT_TABLE_WHITE_OPENING[64] =
+constexpr int KNIGHT_TABLE_OPENING[64] =
 {
     -25,-20,-15,-15,-15,-15,-20,-25,
     -20,-10,  0,  5,  5,  0,-10,-20,
@@ -175,7 +127,7 @@ constexpr int KNIGHT_TABLE_WHITE_OPENING[64] =
     -25,-20,-15,-15,-15,-15,-20,-25
 };
 
-constexpr int KNIGHT_TABLE_WHITE_ENDGAME[64] =
+constexpr int KNIGHT_TABLE_ENDGAME[64] =
 {
     -40,-20,-20,-20,-20,-20,-20,-40,
     -20,-10,-10,-10,-10,-10,-10,-20,
@@ -187,31 +139,7 @@ constexpr int KNIGHT_TABLE_WHITE_ENDGAME[64] =
     -20,-15,-10,-10,-10,-10,-15,-20
 };
 
-constexpr int BISHOP_TABLE_BLACK_OPENING[64] =
-{
-    -20,-10,-10,-10,-10,-10,-10,-20,
-    -10,  0,  0,  0,  0,  0,  0,-10,
-    -10,  0,  5, 10, 10,  5,  0,-10,
-    -10,  5,  5, 10, 10,  5,  5,-10,
-    -10,  0, 10, 10, 10, 10,  0,-10,
-    -10,  5,  5,  5,  5,  5,  5,-10,
-    -10, 15,  0,  0,  0,  0, 15,-10,
-    -20,-10,-10,-10,-10,-10,-10,-20
-};
-
-constexpr int BISHOP_TABLE_BLACK_ENDGAME[64] =
-{
-    -20,-10,-10,-10,-10,-10,-10,-20,
-    -10,  5,  5,  5,  5,  5,  5,-10,
-    -10,  5, 15, 15, 15, 15,  5,-10,
-    -10,  5, 15, 20, 20, 15,  5,-10,
-    -10,  5, 15, 20, 20, 15,  5,-10,
-    -10,  5, 15, 15, 15, 15,  5,-10,
-    -10,  5,  5,  5,  5,  5,  5,-10,
-    -20,-10,-10,-10,-10,-10,-10,-20
-};
-
-constexpr int BISHOP_TABLE_WHITE_OPENING[64] =
+constexpr int BISHOP_TABLE_OPENING[64] =
 {
     -20,-10,-10,-10,-10,-10,-10,-20,
     -10, 15,  0,  0,  0,  0, 15,-10,
@@ -223,7 +151,7 @@ constexpr int BISHOP_TABLE_WHITE_OPENING[64] =
     -20,-10,-10,-10,-10,-10,-10,-20
 };
 
-constexpr int BISHOP_TABLE_WHITE_ENDGAME[64] =
+constexpr int BISHOP_TABLE_ENDGAME[64] =
 {
     -20,-10,-10,-10,-10,-10,-10,-20,
     -10,  5,  5,  5,  5,  5,  5,-10,
@@ -235,31 +163,7 @@ constexpr int BISHOP_TABLE_WHITE_ENDGAME[64] =
     -20,-10,-10,-10,-10,-10,-10,-20
 };
 
-constexpr int ROOK_TABLE_BLACK_OPENING[64] = 
-{
-    0,  0,  0,  0,  0,  0,  0,  0,
-    5, 10, 10, 10, 10, 10, 10,  5,
-    -5,  0,  0,  0,  0,  0,  0, -5,
-    -5,  0,  0,  0,  0,  0,  0, -5,
-    -5,  0,  0,  0,  0,  0,  0, -5,
-    -5,  0,  0,  0,  0,  0,  0, -5,
-    -5,  0,  0,  0,  0,  0,  0, -5,
-    0,  0,  0,  5,  5,  0,  0,  0
-};
-
-constexpr int ROOK_TABLE_BLACK_ENDGAME[64] = 
-{
-    3, 3, 3, 3, 3, 3, 3, 3,
-    2, 2, 3, 3, 3, 3, 2, 2,
-    1, 1, 2, 2, 2, 2, 1, 1,
-    1, 1, 2, 2, 2, 2, 1, 1,
-    1, 1, 2, 2, 2, 2, 1, 1,
-    1, 1, 2, 2, 2, 2, 1, 1,
-    1, 1, 2, 2, 2, 2, 1, 1,
-    1, 1, 2, 2, 2, 2, 1, 1
-};
-
-constexpr int ROOK_TABLE_WHITE_OPENING[64] = 
+constexpr int ROOK_TABLE_OPENING[64] = 
 {
     0,  0,  0,  5,  5,  0,  0,  0,
     -5,  0,  0,  0,  0,  0,  0, -5,
@@ -271,7 +175,7 @@ constexpr int ROOK_TABLE_WHITE_OPENING[64] =
     0,  0,  0,  0,  0,  0,  0,  0
 };
 
-constexpr int ROOK_TABLE_WHITE_ENDGAME[64] = 
+constexpr int ROOK_TABLE_ENDGAME[64] = 
 {
     1, 1, 2, 2, 2, 2, 1, 1,
     1, 1, 2, 2, 2, 2, 1, 1,
@@ -283,31 +187,7 @@ constexpr int ROOK_TABLE_WHITE_ENDGAME[64] =
     3, 3, 3, 3, 3, 3, 3, 3
 };
 
-constexpr int QUEEN_TABLE_BLACK_OPENING[64] = 
-{
-    -20,-20,-20,-20,-20,-20,-20,-20,
-    -20,-10,-10,-10,-10,-10,-10,-20,
-    -20,-10,-10,-10,-10,-10,-10,-20,
-    -20,-10,-10,-10,-10,-10,-10,-20,
-    -20,-10,-10,-10,-10,-10,-10,-20,
-    -10, -5, -5, -5, -5, -5,  0,-10,
-    -10,  0,  0,  0,  0,  5,  0,-10,
-    -20,-10,-10, -5, 10,-10,-10,-20
-};
-
-constexpr int QUEEN_TABLE_BLACK_ENDGAME[64] =
-{
-    -10, -5, -5,  -5,  -5, -5, -5,-10,
-     -5,  6,  6,   6,   6,  6,  6, -5,
-     -5,  6,  8,   8,   8,  8,  6, -5,
-     -5,  6,  8,  10,  10,  8,  6, -5,
-     -5,  6,  8,  10,  10,  8,  6, -5,
-     -5,  6,  8,   8,   8,  8,  6, -5,
-     -5,  6,  6,   6,   6,  6,  6, -5,
-    -10, -5, -5,  -5,  -5, -5, -5,-10
-};
-
-constexpr int QUEEN_TABLE_WHITE_OPENING[64] =
+constexpr int QUEEN_TABLE_OPENING[64] =
 {
     -20,-10,-10, -5, 10,-10,-10,-20,
     -10,  0,  0,  0,  0,  5,  0,-10,
@@ -319,7 +199,7 @@ constexpr int QUEEN_TABLE_WHITE_OPENING[64] =
     -20,-20,-20,-20,-20,-20,-20,-20,
 };
 
-constexpr int QUEEN_TABLE_WHITE_ENDGAME[64] = 
+constexpr int QUEEN_TABLE_ENDGAME[64] = 
 {
     -10, -5, -5,  -5,  -5, -5, -5,-10,
      -5,  6,  6,   6,   6,  6,  6, -5,
@@ -331,31 +211,7 @@ constexpr int QUEEN_TABLE_WHITE_ENDGAME[64] =
     -10, -5, -5,  -5,  -5, -5, -5,-10
 };
 
-constexpr int KING_TABLE_BLACK_OPENING[64] = 
-{
-    -30,-40,-40,-50,-50,-40,-40,-30,
-    -30,-40,-40,-50,-50,-40,-40,-30,
-    -30,-40,-40,-50,-50,-40,-40,-30,
-    -30,-40,-40,-50,-50,-40,-40,-30,
-    -20,-30,-30,-40,-40,-30,-30,-20,
-    -10,-20,-20,-20,-20,-20,-20,-10,
-     15, 15, -5,-10,-10, -5, 15, 15,
-     15, 30,-10,-15,-15, 30, 25, 15
-};
-
-constexpr int KING_TABLE_BLACK_ENDGAME[64] = 
-{
-    -20,-15,-15,-10,-10,-15,-15,-20,
-    -15, -5,  5,  5,  5,  5, -5,-15,
-    -15,  5, 10, 15, 15, 10,  5,-15,
-    -15,  5, 15, 20, 20, 15,  5,-15,
-    -15,  5, 15, 20, 20, 15,  5,-15,
-    -15,  5, 10, 15, 15, 10,  5,-15,
-    -15, -5,  5,  5,  5,  5, -5,-15,
-    -20,-15,-15,-10,-10,-15,-15,-20
-};
-
-constexpr int KING_TABLE_WHITE_OPENING[64] = 
+constexpr int KING_TABLE_OPENING[64] = 
 {
     15, 30,-10,-15,-15, 30, 25, 15,
     15, 15, -5,-10,-10, -5, 15, 15,
@@ -367,7 +223,7 @@ constexpr int KING_TABLE_WHITE_OPENING[64] =
     -30,-40,-40,-50,-50,-40,-40,-30
 };
 
-constexpr int KING_TABLE_WHITE_ENDGAME[64] = 
+constexpr int KING_TABLE_ENDGAME[64] = 
 {
     -20,-15,-15,-10,-10,-15,-15,-20,
     -15, -5,  5,  5,  5,  5, -5,-15,
@@ -379,8 +235,8 @@ constexpr int KING_TABLE_WHITE_ENDGAME[64] =
     -20,-15,-15,-10,-10,-15,-15,-20
 };
 
-// create multi-dimensional array called TABLES that stores the above arrays in 2 x 6 x 2 x 64 array (2 colors, 6 pieces, 2 phases, 64 squares)
-extern const int* TABLES[2][6][2];
+// create multi-dimensional array called TABLES that stores the above arrays in 6 x 2 x 64 array (6 pieces, 2 phases, 64 squares)
+extern const int* TABLES[6][2];
 const int HISTORY_SIZE = 2; // 1 mb = 1 * 1024 * 1024 bytes
 
 Color extractColor(int);

@@ -63,8 +63,8 @@ void scoreMoves(Board& board, TranspositionTable* tt, Move killerMoves[][2], Mov
         // get positional gain from move
         Color color = board.getNextMove();
         Piece piece = extractPiece(board.getSquareToPiece(move.from));
-        int openingFrom = TABLES[color][piece-1][0][move.from], openingTo = TABLES[color][piece-1][0][move.to];
-        int endgameFrom = TABLES[color][piece-1][1][move.from], endgameTo = TABLES[color][piece-1][1][move.to];
+        int openingFrom = TABLES[piece-1][0][getTableIndex(move.from, color)], openingTo = TABLES[piece-1][0][getTableIndex(move.to, color)];
+        int endgameFrom = TABLES[piece-1][1][getTableIndex(move.from, color)], endgameTo = TABLES[piece-1][1][getTableIndex(move.to, color)];
         int phase = board.getPhase();
         int fromScore = (openingFrom * (256 - phase) + endgameFrom * phase) / 256;
         int toScore = (openingTo * (256 - phase) + endgameTo * phase) / 256;

@@ -13,22 +13,8 @@ int main()
 {
 	// r4k1r/1pP1npp1/1Pb4p/p6q/Q1p2p1b/B1P2N2/P2N2P1/R2K3R w - - 0 1 is a wonderful FEN string to test with
 	// rn3rk1/pbppq1pp/1p2pb2/4N2Q/3PN3/3B4/PPP2PPP/R3K2R w KQ - 7 11 is a mate in 7 puzzle
-	/*for (int piece = 1; piece < 7; piece++)
-	{
-		for (int phase = 0; phase < 2; phase++)
-		{
-			for (int square = 0; square < 64; square++)
-			{
-				bool equal = TABLES[WHITE][piece-1][phase][getTableIndex(square, WHITE)] == TABLES[WHITE][piece-1][phase][getTableIndex(square, BLACK)];
-				if (!equal)
-				{
-					std::cout << "Piece: " << piece-1 << " Phase: " << phase << " Square: " << square << std::endl;
-				}
-			}
-		}
-	}*/
 
-	std::cout << "Done" << std::endl;
+	/*std::cout << "Done" << std::endl;
 	// get user input
 	string input;
 	cout << "Enter a FEN string: ";
@@ -40,7 +26,7 @@ int main()
 
 	// initialize board
 	Board board = Board(input);
-	std::cout << "Board initialized" << std::endl;
+	std::cout << "Board initialized" << std::endl;*/
 
 	/*std::vector<std::vector<std::string>> games = processPGN("book_games.pgn", 10000);
 	std::cout << "Games processed" << std::endl;
@@ -53,14 +39,14 @@ int main()
 	}*/
 
 	// search
-	AI ai = AI();
+	/*AI ai = AI();
 
 	// get best move
 	Move bestMove = ai.getBestMove(board);
 
 	// make move and print board
 	board.makeMove(bestMove);
-	board.print();
+	board.print();*/
 
 	return 0;
 }

@@ -4,24 +4,14 @@
 #include <cmath>
 
 const int MAX_MOVES = 256;
-const int* TABLES[2][6][2] =
+const int* TABLES[6][2] =
 {
-    {
-        {PAWN_TABLE_WHITE_OPENING, PAWN_TABLE_WHITE_ENDGAME},
-        {KNIGHT_TABLE_WHITE_OPENING, KNIGHT_TABLE_WHITE_ENDGAME},
-        {BISHOP_TABLE_WHITE_OPENING, BISHOP_TABLE_WHITE_ENDGAME},
-        {ROOK_TABLE_WHITE_OPENING, ROOK_TABLE_WHITE_ENDGAME},
-        {QUEEN_TABLE_WHITE_OPENING, QUEEN_TABLE_WHITE_ENDGAME},
-        {KING_TABLE_WHITE_OPENING, KING_TABLE_WHITE_ENDGAME}
-    },
-    {
-        {PAWN_TABLE_BLACK_OPENING, PAWN_TABLE_BLACK_ENDGAME},
-        {KNIGHT_TABLE_BLACK_OPENING, KNIGHT_TABLE_BLACK_ENDGAME},
-        {BISHOP_TABLE_BLACK_OPENING, BISHOP_TABLE_BLACK_ENDGAME},
-        {ROOK_TABLE_BLACK_OPENING, ROOK_TABLE_BLACK_ENDGAME},
-        {QUEEN_TABLE_BLACK_OPENING, QUEEN_TABLE_BLACK_ENDGAME},
-        {KING_TABLE_BLACK_OPENING, KING_TABLE_BLACK_ENDGAME}
-    }
+    {PAWN_TABLE_OPENING, PAWN_TABLE_ENDGAME},
+    {KNIGHT_TABLE_OPENING, KNIGHT_TABLE_ENDGAME},
+    {BISHOP_TABLE_OPENING, BISHOP_TABLE_ENDGAME},
+    {ROOK_TABLE_OPENING, ROOK_TABLE_ENDGAME},
+    {QUEEN_TABLE_OPENING, QUEEN_TABLE_ENDGAME},
+    {KING_TABLE_OPENING, KING_TABLE_ENDGAME}
 };
 
 Color extractColor(int fullPiece)
@@ -161,8 +151,8 @@ Board::Board(std::string fen)
             pieceCounts[color][piece-1]++;
 
             // update static eval
-            staticEvalOpening += TABLES[color][piece-1][0][index] * (color == Color::WHITE ? 1 : -1);
-            staticEvalEndgame += TABLES[color][piece-1][1][index] * (color == Color::WHITE ? 1 : -1);
+            staticEvalOpening += TABLES[piece-1][0][getTableIndex(index, color)] * (color == Color::WHITE ? 1 : -1);
+            staticEvalEndgame += TABLES[piece-1][1][getTableIndex(index, color)] * (color == Color::WHITE ? 1 : -1);
             material[color] += PIECE_VALUES[piece-1];
 
             // set piece
@@ -949,14 +939,14 @@ void Board::togglePiece(Color color, Piece piece, Square square)
         squareToPiece[square] = static_cast<int>(piece) + 8 * static_cast<int>(color);
         pieceCounts[color][piece-1]++;
         material[color] += PIECE_VALUES[piece-1];
-        staticEvalOpening += TABLES[color][piece-1][0][square] * (color == Color::WHITE ? 1 : -1);
-        staticEvalEndgame += TABLES[color][piece-1][1][square] * (color == Color::WHITE ? 1 : -1);
+        staticEvalOpening += TABLES[piece-1][0][getTableIndex(square, color)] * (color == Color::WHITE ? 1 : -1);
+        staticEvalEndgame += TABLES[piece-1][1][getTableIndex(square, color)] * (color == Color::WHITE ? 1 : -1);
     } else { // remove piece
         squareToPiece[square] = Piece::EMPTY;
         pieceCounts[color][piece-1]--;
         material[color] -= PIECE_VALUES[piece-1];
-        staticEvalOpening -= TABLES[color][piece-1][0][square] * (color == Color::WHITE ? 1 : -1);
-        staticEvalEndgame -= TABLES[color][piece-1][1][square] * (color == Color::WHITE ? 1 : -1);
+        staticEvalOpening -= TABLES[piece-1][0][getTableIndex(square, color)] * (color == Color::WHITE ? 1 : -1);
+        staticEvalEndgame -= TABLES[piece-1][1][getTableIndex(square, color)] * (color == Color::WHITE ? 1 : -1);
     }
 
     currentHash ^= ZOBRIST_PIECES[color][piece-1][square];
