@@ -388,6 +388,9 @@ Piece extractPiece(int);
 Square squareToIndex(std::string);
 std::string indexToSquare(Square);
 
+// given an index from white's perspective, return the index from whichever color's perspective
+int getTableIndex(int, Color);
+
 class Board
 {
     public:

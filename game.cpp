@@ -52,6 +52,16 @@ std::string indexToSquare(Square index)
     return std::string(1, 'a' + file) + std::to_string(rank + 1);
 }
 
+// given an index from white's perspective, return the index from whichever color's perspective
+// indices for black have the same col in the array as white but the row is 7 - row
+int getTableIndex(int index, Color color)
+{
+    if (color == Color::WHITE) return index;
+    int col = index % 8;
+    int row = index / 8;
+    return (7 - row) * 8 + col;
+}
+
 Board::Board(std::string fen) 
 {   
     /* INITIALIZE FIELDS */
