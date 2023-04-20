@@ -40,11 +40,13 @@ enum SCORE
 
     // bishop values
     BISHOP_PAIR = 10,
+    BISHOP_MOBILITY = 3,
 
     // rook values
     ROOK_INCREASE_WITH_PAWN_LOSS = 8,
     ROOK_OPEN_FILE = 30,
     ROOK_HALF_OPEN_FILE = 18,
+    ROOK_ROOK_CONNECTED = 6,
 
     // king values
     KING_BLOCK_ROOK_PENALTY = 20,
@@ -68,6 +70,7 @@ int evaluate(Board& board, PawnTable* pawnTable);
 
 // bishop stuff
 bool hasBishopPair(Board& board, Color color);
+void bishopMobility(Board& board, Color color, int& openingScore, int& endgameScore);
 
 // knight stuff
 bool isHole(Board& board, Color color, Square square);

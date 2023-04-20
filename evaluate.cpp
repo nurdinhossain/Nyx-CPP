@@ -37,6 +37,14 @@ int lazyEvaluate(Board& board)
         endgameScore -= BISHOP_PAIR;
     }
 
+    // bishop mobility
+    int whiteOpeningBishopMobilityScore = 0, whiteEndgameBishopMobilityScore = 0;
+    int blackOpeningBishopMobilityScore = 0, blackEndgameBishopMobilityScore = 0;
+    bishopMobility(board, WHITE, whiteOpeningBishopMobilityScore, whiteEndgameBishopMobilityScore);
+    bishopMobility(board, BLACK, blackOpeningBishopMobilityScore, blackEndgameBishopMobilityScore);
+    openingScore += whiteOpeningBishopMobilityScore - blackOpeningBishopMobilityScore;
+    endgameScore += whiteEndgameBishopMobilityScore - blackEndgameBishopMobilityScore;
+
     // king score
     int whiteOpeningKingScore = 0, whiteEndgameKingScore = 0;
     int blackOpeningKingScore = 0, blackEndgameKingScore = 0;
@@ -156,6 +164,26 @@ int evaluate(Board& board, PawnTable* pawnTable)
 bool hasBishopPair(Board& board, Color color)
 {
     return board.getPieceCount(color, BISHOP) >= 2;
+}
+
+void bishopMobility(Board& board, Color color, int& openingScore, int& endgameScore)
+{
+    UInt64 bishops = board.getPiece(color, BISHOP);
+    while (bishops)
+    {
+        // get the least significant bit
+        Square square = static_cast<Square>(lsb(bishops));
+
+        // get the mobility of the bishop
+        UInt64 bishopAttack = lookupBishopAttack(square, board.getFullOccupied() ^ (1ULL << square));
+        int mobility = popCount(bishopAttack & SIDES[1-color] & ~board.getFullOccupied()); // moves on enemy side
+
+        // add to score
+        openingScore += BISHOP_MOBILITY * mobility;
+
+        // remove the least significant bit
+        bishops &= bishops - 1;
+    }
 }
 
 // knight
@@ -291,6 +319,14 @@ void rookScore(Board& board, Color color, int& openingScore, int& endgameScore)
         if (kingBlockRook(board, color, square))
         {
             openingScore -= KING_BLOCK_ROOK_PENALTY;
+        }
+
+        // check if rooks are connected
+        UInt64 rookAttack = lookupRookAttack(square, board.getFullOccupied() ^ (1ULL << square));
+        if (rookAttack & board.getPiece(color, ROOK))
+        {
+            openingScore += ROOK_ROOK_CONNECTED;
+            endgameScore += ROOK_ROOK_CONNECTED;
         }
 
         rooks &= rooks - 1;
