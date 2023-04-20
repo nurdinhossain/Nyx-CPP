@@ -350,6 +350,9 @@ int AI::quiesce(Board& board, int alpha, int beta)
     int numMoves = 0;
     board.generateMoves(moves, numMoves, true, true);
 
+    // see if we're in check
+    bool friendlyKingInCheck = board.getCheckers() != 0;
+
     // sort moves
     scoreMoves(board, transpositionTable_, killerMoves_, moves, numMoves, -1);
     sortMoves(moves, numMoves);
@@ -357,7 +360,7 @@ int AI::quiesce(Board& board, int alpha, int beta)
     // loop through moves
     for (int i = 0; i < numMoves; i++)
     {
-        if (moves[i].type != EN_PASSANT)
+        if (moves[i].type < KNIGHT_PROMOTION && moves[i].type != EN_PASSANT && !friendlyKingInCheck) // dont prune promos, ep, or checks
         {
             int seeScore = see(board, moves[i].from, moves[i].to);
 
