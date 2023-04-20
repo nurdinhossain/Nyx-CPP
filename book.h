@@ -2,7 +2,6 @@
 #include "game.h"
 #include <vector>
 #include <string>
-#include <unordered_map>
 
 // method to read and preprocess a PGN file into separate games (represented by a vector of strings)
 std::vector<std::vector<std::string>> processPGN(std::string filename, int limit=5000);

@@ -128,7 +128,7 @@ int ambiguousMove(Board& board, Move moves[], int moveCount, Piece piece, int sq
     return 0;
 }
 
-// method to convert a vector of strings (game) into an unordered map of moves (book)
+// method to convert a vector of strings (game) into fen strings
 std::vector<std::string> processGame(std::vector<std::string> game)
 {
     // initialize board

@@ -15,39 +15,37 @@ int main()
 	// rn3rk1/pbppq1pp/1p2pb2/4N2Q/3PN3/3B4/PPP2PPP/R3K2R w KQ - 7 11 is a mate in 7 puzzle
 
 	// get user input
-	/*string input;
+	string input;
 	cout << "Enter a FEN string: ";
-	getline(cin, input);*/
+	getline(cin, input);
 
 	// initialize sliding attacks
 	processBishopAttacks("bishopAttackTable.txt");
 	processRookAttacks("rookAttackTable.txt");
 
 	// initialize board
-	/*Board board = Board(input);
+	Board board = Board(input);
 	std::cout << "Board initialized" << std::endl;
 
-	std::cout << board.getFen() << std::endl;*/
-
-	std::vector<std::vector<std::string>> games = processPGN("book_games.pgn", 10000);
+	/*std::vector<std::vector<std::string>> games = processPGN("book_games.pgn", 10000);
 	std::cout << "Games processed" << std::endl;
 
-	std::vector<std::string> fens = processGame(games[0]);
+	std::vector<std::string> fens = processGame(games[1]);
 	std::cout << "FENs processed" << std::endl;
 	for (int i = 0; i < fens.size(); i++)
 	{
 		std::cout << fens[i] << std::endl;
-	}
+	}*/
 
 	// search
-	/*AI ai = AI();
+	AI ai = AI();
 
 	// get best move
 	Move bestMove = ai.getBestMove(board);
 
 	// make move and print board
 	board.makeMove(bestMove);
-	board.print();*/
+	board.print();
 
 	return 0;
 }

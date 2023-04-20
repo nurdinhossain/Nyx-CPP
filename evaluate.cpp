@@ -374,6 +374,15 @@ void pawnScore(Board& board, Color color, int& openingScore, int& endgameScore)
     {
         Square square = static_cast<Square>(lsb(pawns));
 
+        // check if pawn is protected
+        bool pawnIsProtected = isProtected(board, color, square);
+
+        // small penalty for unprotected pawn
+        if (!pawnIsProtected)
+        {
+            openingScore -= UNPROTECTED_PAWN_PENALTY;
+        }
+
         // check if pawn is passed
         if (isPassed(board, color, square))
         {
@@ -387,7 +396,7 @@ void pawnScore(Board& board, Color color, int& openingScore, int& endgameScore)
             }
 
             // check if pawn is protected
-            if (isProtected(board, color, square))
+            if (pawnIsProtected)
             {
                 openingScore += PROTECTED_PASSED_PAWN;
                 endgameScore += PROTECTED_PASSED_PAWN;
@@ -420,10 +429,12 @@ void pawnScore(Board& board, Color color, int& openingScore, int& endgameScore)
 // king
 int kingPawnShieldScore(Board& board, Color color, Square square)
 {
-    UInt64 kingAttack = KING_ATTACKS[square];
-    UInt64 kingFrontSpan = color == WHITE ? SQUARES_ABOVE_WHITE_PAWNS[square / 8] : SQUARES_BELOW_BLACK_PAWNS[square / 8];
-
     return popCount(kingSafetyArea(color, square) & board.getPiece(color, PAWN));
+}
+
+int kingPawnStormScore(Board& board, Color color, Square square)
+{
+    return popCount(kingDangerArea(color, square) & board.getPiece(static_cast<Color>(1 - color), PAWN));
 }
 
 UInt64 kingSafetyArea(Color color, Square square)
@@ -446,13 +457,35 @@ UInt64 kingSafetyArea(Color color, Square square)
     return safetyArea;
 }
 
+// king safety area + one extra rank in front of king
+UInt64 kingDangerArea(Color color, Square square)
+{
+    UInt64 dangerArea = kingSafetyArea(color, square);
+    int rank = square / 8;
+
+    // add rank 3 ranks ahead of king
+    if (color == WHITE)
+    {
+        if (rank < 5) dangerArea |= (RANK_MASKS[rank + 3] & NEIGHBORING_FILES[square % 8]);
+    }
+    else
+    {
+        if (rank > 2) dangerArea |= (RANK_MASKS[rank - 3] & NEIGHBORING_FILES[square % 8]);
+    }
+
+    return dangerArea;
+}
+
 void kingScore(Board& board, Color color, int& openingScore, int& endgameScore)
 {
     // get king square   
     Square kingIndex = static_cast<Square>(lsb(board.getPiece(color, KING)));
 
     // check for king pawn shield scaled by enemy material
-    openingScore += kingPawnShieldScore(board, color, kingIndex) * PAWN_SHIELD;
+    openingScore += kingPawnShieldScore(board, color, kingIndex) * PAWN_SHIELD * board.getMaterial(static_cast<Color>(1 - color)) / PAWN_SHIELD_DIVISOR;
+
+    // penalty for being stormed by enemy pawns
+    openingScore -= kingPawnStormScore(board, color, kingIndex) * PAWN_STORM * board.getMaterial(static_cast<Color>(1 - color)) / PAWN_SHIELD_DIVISOR;
 
     // check for king on open file
     int file = kingIndex % 8;

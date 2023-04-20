@@ -30,6 +30,7 @@ enum SCORE
     OUTSIDE_PASSED_PAWN = 20,
     BACKWARD_PAWN_PENALTY = 10,
     ISOLATED_PAWN_PENALTY = 15,
+    UNPROTECTED_PAWN_PENALTY = 8,
     DOUBLED_PAWN_PENALTY = 7,
 
     // knight values
@@ -48,10 +49,12 @@ enum SCORE
     // king values
     KING_BLOCK_ROOK_PENALTY = 20,
     KING_OPEN_FILE_PENALTY = 60,
-    KING_HALF_OPEN_FILE_PENALTY = 40,
-    KING_NEXT_TO_OPEN_FILE_PENALTY = 35,
-    KING_NEXT_TO_HALF_OPEN_FILE_PENALTY = 25,
-    PAWN_SHIELD = 5,
+    KING_HALF_OPEN_FILE_PENALTY = 45,
+    KING_NEXT_TO_OPEN_FILE_PENALTY = 38,
+    KING_NEXT_TO_HALF_OPEN_FILE_PENALTY = 30,
+    PAWN_SHIELD = 4,
+    PAWN_STORM = 3,
+    PAWN_SHIELD_DIVISOR = 2000,
 
     // other scores
     TEMPO_BONUS = 5
@@ -88,5 +91,7 @@ void pawnScore(Board& board, Color color, int& openingScore, int& endgameScore);
 
 // king stuff
 UInt64 kingSafetyArea(Color color, Square square);
+UInt64 kingDangerArea(Color color, Square square);
 int kingPawnShieldScore(Board& board, Color color, Square square);
+int kingPawnStormScore(Board& board, Color color, Square square);
 void kingScore(Board& board, Color color, int& openingScore, int& endgameScore);
