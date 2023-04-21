@@ -29,23 +29,18 @@ TranspositionTable::TranspositionTable(int mb)
 
     // initialize array
     table_ = new Entry[size_];
-
-    std::cout << "Transposition table size: " << size_ << std::endl;
 }
 
 TranspositionTable::~TranspositionTable()
 {
     // delete the table
     delete[] table_;
-
-    std::cout << "Transposition table deleted" << std::endl;
 }
 
 // helpers/getters 
 
 void TranspositionTable::clear()
 {
-    std::cout << "Clearing transposition table" << std::endl;
     // clear the table
     for (int i = 0; i < size_; i++)
     {
@@ -55,8 +50,6 @@ void TranspositionTable::clear()
         table_[i].score = 0;
         table_[i].move = Move();
     }
-
-    std::cout << "Transposition table cleared" << std::endl;
 }
 
 Move TranspositionTable::getMove(UInt64 key)

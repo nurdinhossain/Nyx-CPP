@@ -74,11 +74,9 @@ std::vector<std::vector<std::string>> processPGN(std::string filename, int limit
                 line.erase(0, pos + delimiter.length());
             }
 
-            // add last token to current game only if it is not a number and not mate/stalemate
-            if (line.find('.') == string::npos && line != "1-0" && line != "0-1" && line != "1/2-1/2")
-            {
+            // add last token to current game (should be result)
+            if (line.find('.') == string::npos)
                 currentGame.push_back(line);
-            }
         }
 
         // if line is last line, add copy of game to games and reset current game
@@ -128,6 +126,19 @@ int ambiguousMove(Board& board, Move moves[], int moveCount, Piece piece, int sq
     return 0;
 }
 
+// method to convert game result ("1-0", "0-1", "1/2-1/2") into a number (1, 0, 0.5)
+std::string processResult(std::string result)
+{
+    if (result == "1-0") return "1";
+    else if (result == "0-1") return "0";
+    else if (result == "1/2-1/2") return "0.5";
+    
+    // if we get here, throw an error
+    throw std::invalid_argument("Invalid result");
+
+    return "";
+}
+
 // method to convert a vector of strings (game) into fen strings
 std::vector<std::string> processGame(std::vector<std::string> game)
 {
@@ -137,8 +148,12 @@ std::vector<std::string> processGame(std::vector<std::string> game)
     // initialize vector of fen strings
     std::vector<std::string> fenStrings;
 
+    // get result of game from last element of game vector
+    std::string result = game[game.size() - 1];
+    game.pop_back();
+
     // add initial fen
-    fenStrings.push_back(board.getFen());
+    fenStrings.push_back(board.getFen() + "," + processResult(result));
 
     // some lookup tables
     char pieceLookup[6] = { 'P', 'N', 'B', 'R', 'Q', 'K' };
@@ -234,10 +249,7 @@ std::vector<std::string> processGame(std::vector<std::string> game)
                 board.makeMove(move);
 
                 // add fen string to vector
-                fenStrings.push_back(board.getFen());
-
-                // print move
-                std::cout << indexToSquare(from) << indexToSquare(to) << std::endl;
+                fenStrings.push_back(board.getFen() + "," + processResult(result));
 
                 // set found to true
                 found = true;

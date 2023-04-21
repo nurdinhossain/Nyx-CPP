@@ -27,8 +27,6 @@ PawnTable::PawnTable(int mb)
 
     // initialize array
     table_ = new PawnEntry[size_];
-
-    std::cout << "Pawn table size: " << size_ << std::endl;
 }
 
 // destructor
@@ -36,14 +34,11 @@ PawnTable::~PawnTable()
 {
     // delete the table
     delete[] table_;
-
-    std::cout << "Pawn table deleted" << std::endl;
 }
 
 // helpers/getters
 void PawnTable::clear()
 {
-    std::cout << "Clearing pawn table" << std::endl;
     // clear the table
     for (int i = 0; i < size_; i++)
     {
@@ -51,8 +46,6 @@ void PawnTable::clear()
         table_[i].openingScore = 0;
         table_[i].endgameScore = 0;
     }
-
-    std::cout << "Pawn table cleared" << std::endl;
 }
 
 int PawnTable::getOpeningScore(UInt64 key)

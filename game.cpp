@@ -173,7 +173,6 @@ Board::Board(std::string fen)
 
 Board::~Board()
 {
-    std::cout << "deleting board" << std::endl;
     delete[] history;
 }
 
