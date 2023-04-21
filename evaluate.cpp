@@ -1,5 +1,6 @@
 #include "evaluate.h"
 #include "bitboard.h"
+#include "evalparams.h"
 #include <iostream>
 
 // lazy evaluation

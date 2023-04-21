@@ -1,5 +1,6 @@
 #include "transposition.h"
 #include "evaluate.h"
+#include "evalparams.h"
 #include <iostream>
 #include <cmath>
 

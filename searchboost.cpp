@@ -2,6 +2,7 @@
 #include "evaluate.h"
 #include "bitboard.h"
 #include "tables.h"
+#include "evalparams.h"
 #include <vector>
 #include <algorithm>
 #include <iostream>

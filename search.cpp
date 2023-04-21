@@ -4,6 +4,7 @@
 #include "evaluate.h"
 #include "moveorder.h"
 #include "searchboost.h"
+#include "evalparams.h"
 
 // implement struct member functions
 void SearchStats::print()

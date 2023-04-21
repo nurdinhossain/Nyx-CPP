@@ -14,53 +14,6 @@ constexpr UInt64 SQUARES_BELOW_BLACK_PAWNS[8] = {
     0x0, 0xFF, 0xFFFF, 0xFFFFFF, 0xFFFFFFFF, 0xFFFFFFFFFF, 0xFFFFFFFFFFFF, 0xFFFFFFFFFFFFFF
 };
 
-// enum for scores
-enum SCORE
-{
-    // inf/mate/draw
-    POS_INF = 100000,
-    NEG_INF = -100000,
-    MATE = 99000,
-    DRAW = 0,
-    MATE_BUFFER = 999,
-
-    // pawn values
-    PASSED_PAWN = 60,
-    PROTECTED_PASSED_PAWN = 20,
-    OUTSIDE_PASSED_PAWN = 20,
-    BACKWARD_PAWN_PENALTY = 10,
-    ISOLATED_PAWN_PENALTY = 15,
-    UNPROTECTED_PAWN_PENALTY = 8,
-    DOUBLED_PAWN_PENALTY = 7,
-
-    // knight values
-    KNIGHT_DECREASE_WITH_PAWN_LOSS = 8,
-    KNIGHT_OUTPOST = 10,
-    KNIGHT_OUTPOST_ON_HOLE = 10,
-
-    // bishop values
-    BISHOP_PAIR = 10,
-    BISHOP_MOBILITY = 3,
-
-    // rook values
-    ROOK_INCREASE_WITH_PAWN_LOSS = 8,
-    ROOK_OPEN_FILE = 30,
-    ROOK_HALF_OPEN_FILE = 18,
-
-    // king values
-    KING_BLOCK_ROOK_PENALTY = 20,
-    KING_OPEN_FILE_PENALTY = 60,
-    KING_HALF_OPEN_FILE_PENALTY = 45,
-    KING_NEXT_TO_OPEN_FILE_PENALTY = 38,
-    KING_NEXT_TO_HALF_OPEN_FILE_PENALTY = 30,
-    PAWN_SHIELD = 4,
-    PAWN_STORM = 3,
-    PAWN_SHIELD_DIVISOR = 2000,
-
-    // other scores
-    TEMPO_BONUS = 5
-};
-
 // lazy eval function
 int lazyEvaluate(Board& board);
 
