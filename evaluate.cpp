@@ -321,14 +321,6 @@ void rookScore(Board& board, Color color, int& openingScore, int& endgameScore)
             openingScore -= KING_BLOCK_ROOK_PENALTY;
         }
 
-        // check if rooks are connected
-        UInt64 rookAttack = lookupRookAttack(square, board.getFullOccupied() ^ (1ULL << square));
-        if (rookAttack & board.getPiece(color, ROOK))
-        {
-            openingScore += ROOK_ROOK_CONNECTED;
-            endgameScore += ROOK_ROOK_CONNECTED;
-        }
-
         rooks &= rooks - 1;
     }
 }
