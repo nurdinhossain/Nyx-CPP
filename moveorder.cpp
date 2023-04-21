@@ -1,4 +1,5 @@
 #include "moveorder.h"
+#include "tables.h"
 
 // score moves based on MVV/LVA
 void scoreMoves(Board& board, TranspositionTable* tt, Move killerMoves[][2], Move moves[], int numMoves, int ply) 
@@ -63,8 +64,9 @@ void scoreMoves(Board& board, TranspositionTable* tt, Move killerMoves[][2], Mov
         // get positional gain from move
         Color color = board.getNextMove();
         Piece piece = extractPiece(board.getSquareToPiece(move.from));
-        int openingFrom = TABLES[color][piece-1][0][move.from], openingTo = TABLES[color][piece-1][0][move.to];
-        int endgameFrom = TABLES[color][piece-1][1][move.from], endgameTo = TABLES[color][piece-1][1][move.to];
+        int fromIndex = getTableIndex(move.from, color), toIndex = getTableIndex(move.to, color);
+        int openingFrom = TABLES[piece-1][0][fromIndex], openingTo = TABLES[piece-1][0][toIndex];
+        int endgameFrom = TABLES[piece-1][1][fromIndex], endgameTo = TABLES[piece-1][1][toIndex];
         int phase = board.getPhase();
         int fromScore = (openingFrom * (256 - phase) + endgameFrom * phase) / 256;
         int toScore = (openingTo * (256 - phase) + endgameTo * phase) / 256;

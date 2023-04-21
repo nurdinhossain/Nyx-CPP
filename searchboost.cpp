@@ -1,6 +1,7 @@
 #include "searchboost.h"
 #include "evaluate.h"
 #include "bitboard.h"
+#include "tables.h"
 #include <vector>
 #include <algorithm>
 #include <iostream>
@@ -155,8 +156,9 @@ bool futile(Board& board, Move move, int moveIndex, int depth, int alpha, int be
     // positional gain
     Color color = board.getNextMove();
     Piece piece = extractPiece(board.getSquareToPiece(move.from));
-    int openingFrom = TABLES[color][piece-1][0][move.from], openingTo = TABLES[color][piece-1][0][move.to];
-    int endgameFrom = TABLES[color][piece-1][1][move.from], endgameTo = TABLES[color][piece-1][1][move.to];
+    int fromIndex = getTableIndex(move.from, color), toIndex = getTableIndex(move.to, color);
+    int openingFrom = TABLES[piece-1][0][fromIndex], openingTo = TABLES[piece-1][0][toIndex];
+    int endgameFrom = TABLES[piece-1][1][fromIndex], endgameTo = TABLES[piece-1][1][toIndex];
     int phase = board.getPhase();
     int fromScore = (openingFrom * (256 - phase) + endgameFrom * phase) / 256;
     int toScore = (openingTo * (256 - phase) + endgameTo * phase) / 256;
