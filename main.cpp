@@ -51,14 +51,16 @@ int main()
 	{
 		std::vector<std::string> fens = processGame(games[i]);
 
-		// remove first 50% and last 25% of FENs
+		// remove first 85% and last 10% of FENs
 		if (fens.size() >= 10)
 		{
-			// remove first 50%
-			fens.erase(fens.begin(), fens.begin() + fens.size() / 2);
+			// remove first 80%
+			int first = fens.size() * 0.85;
+			fens.erase(fens.begin(), fens.begin() + first);
 
-			// remove last 25%
-			fens.erase(fens.begin() + fens.size() * 3 / 4, fens.end());
+			// remove last 10%
+			int last = fens.size() * 0.1;
+			fens.erase(fens.end() - last, fens.end());
 
 			// write to file
 			for (int j = 0; j < fens.size(); j++)

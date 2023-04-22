@@ -1,21 +1,25 @@
 #pragma once 
 #include <string>
 #include <vector>
+using namespace std;
+
+// process file of FENs
+void processFENs(string filename, vector<string>& lines, vector<float>& results);
 
 // given a txt file of FENs + game result, open the file and get mean squared error of quiesce()
-float mse(std::string filename, float k);
+float mse(vector<string>& lines, vector<float>& results, float k);
 
 // find the best k value for tuning
-void findBestK(std::string filename, float start, float end, float step);
+void findBestK(string filename, float start, float end, float step);
 
 // vectorize parameters
-std::vector<int*> vectorizeParameters();
+vector<int*> vectorizeParameters();
 
 // copy vector parameters to pointer parameters
-void copyParametersToPointers(std::vector<int> parameters, std::vector<int*> pointers);
+void copyParametersToPointers(vector<int> parameters, vector<int*> pointers);
 
 // get parameters from pointers
-std::vector<int> getParametersFromPointers(std::vector<int*> pointers);
+vector<int> getParametersFromPointers(vector<int*> pointers);
 
 // texel tuning
-void tune(std::string filename, float k);
+void tune(string filename, float k);

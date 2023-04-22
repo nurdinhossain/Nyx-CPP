@@ -10,14 +10,12 @@
 #include <cmath>
 using namespace std;
 
-// given a txt file of FENs + game result, open the file and get mean squared error of quiesce()
-float mse(std::string filename, float k)
+// process file of FENs
+void processFENs(string filename, vector<string>& lines, vector<float>& results)
 {
     // open file and get lines
     ifstream file(filename);
     string line;
-    vector<string> lines;
-    vector<float> results;
     while (getline(file, line))
     {
         // split line into fen, result by comma
@@ -32,8 +30,15 @@ float mse(std::string filename, float k)
             line.erase(0, pos + delimiter.length());
         }
         results.push_back(stof(line));
-    }
+    } 
 
+    // close the file 
+    file.close();
+}
+
+// given a txt file of FENs + game result, open the file and get mean squared error of quiesce()
+float mse(vector<string>& lines, vector<float>& results, float k)
+{
     // go through each line and get mse
     float total = 0;
     AI ai = AI();
@@ -55,16 +60,13 @@ float mse(std::string filename, float k)
         // add to total
         total += pow(sigmoid - result, 2);
     }
-
-    // close file
-    file.close();
-
+    
     // return mse
     return total / lines.size();
 }
 
 // find the best k value for tuning
-void findBestK(std::string filename, float start, float end, float step)
+/*void findBestK(std::string filename, float start, float end, float step)
 {
     // initialize best k and mse
     float bestK = start;
@@ -92,7 +94,7 @@ void findBestK(std::string filename, float start, float end, float step)
     // print best k and mse
     cout << "Best k: " << bestK << endl;
     cout << "Best MSE: " << bestMSE << endl;
-}
+}*/
 
 // vectorize parameters
 std::vector<int*> vectorizeParameters()
@@ -145,7 +147,7 @@ std::vector<int*> vectorizeParameters()
 }   
 
 // copy vector parameters to pointer parameters
-void copyParametersToPointers(std::vector<int> parameters, std::vector<int*> pointers)
+void copyParametersToPointers(vector<int> parameters, vector<int*> pointers)
 {
     for (int i = 0; i < parameters.size(); i++)
     {
@@ -154,7 +156,7 @@ void copyParametersToPointers(std::vector<int> parameters, std::vector<int*> poi
 }
 
 // get parameters from pointers
-std::vector<int> getParametersFromPointers(std::vector<int*> pointers)
+std::vector<int> getParametersFromPointers(vector<int*> pointers)
 {
     vector<int> parameters;
     for (int i = 0; i < pointers.size(); i++)
@@ -165,10 +167,15 @@ std::vector<int> getParametersFromPointers(std::vector<int*> pointers)
 }
 
 // texel tuning
-void tune(std::string filename, float k)
+void tune(string filename, float k)
 {
     // get parameters
     vector<int*> parameters = vectorizeParameters();
+
+    // get lines and results
+    vector<string> lines;
+    vector<float> results;
+    processFENs(filename, lines, results);
 
     // initialize best mse
     float bestMSE = 1000000;
@@ -190,15 +197,15 @@ void tune(std::string filename, float k)
             int originalParameter = *parameter;
 
             // get original mse
-            float originalMSE = mse(filename, k);
+            float originalMSE = mse(lines, results, k);
 
             // increase parameter
             *parameter = originalParameter + 1;
-            float increasedMSE = mse(filename, k);
+            float increasedMSE = mse(lines, results, k);
 
             // decrease parameter
             *parameter = originalParameter - 1;
-            float decreasedMSE = mse(filename, k);
+            float decreasedMSE = mse(lines, results, k);
 
             // reset parameter
             *parameter = originalParameter;
@@ -217,21 +224,7 @@ void tune(std::string filename, float k)
                 improved = true;
             }
 
-            // if increased mse is less than decreased mse, increase parameter
-            else if (increasedMSE < decreasedMSE)
-            {
-                *parameter = originalParameter + 1;
-                improved = true;
-            }
-
-            // if decreased mse is less than increased mse, decrease parameter
-            else if (decreasedMSE < increasedMSE)
-            {
-                *parameter = originalParameter - 1;
-                improved = true;
-            }
-
-            // if mse is less than best mse, update best mse and best parameters
+            // if mse is less than best mse, update best mse
             if (originalMSE < bestMSE)
             {
                 bestMSE = originalMSE;
@@ -244,19 +237,19 @@ void tune(std::string filename, float k)
             cout << "Decreased MSE: " << decreasedMSE << endl;
             cout << "Best MSE: " << bestMSE << endl;
         }
-    }
 
-    // output parameters to file separated by commas
-    ofstream outputFile;
-    outputFile.open("parameters.txt");
-    vector<int> bestParameters = getParametersFromPointers(parameters);
-    for (int i = 0; i < bestParameters.size(); i++)
-    {
-        outputFile << bestParameters[i];
-        if (i != bestParameters.size() - 1)
+        // save parameters every iteration
+        ofstream outputFile;
+        outputFile.open("parameters.txt");
+        vector<int> bestParameters = getParametersFromPointers(parameters);
+        for (int i = 0; i < bestParameters.size(); i++)
         {
-            outputFile << ",";
+            outputFile << bestParameters[i];
+            if (i != bestParameters.size() - 1)
+            {
+                outputFile << ",";
+            }
         }
+        outputFile.close();
     }
-    outputFile.close();
 }
