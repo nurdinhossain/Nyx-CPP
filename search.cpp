@@ -25,6 +25,7 @@ void SearchStats::print()
     std::cout << ", Null Reductions: " << nullReductions;
     std::cout << ", Reverse Futile Pruned: " << reverseFutilePruned;
     std::cout << ", Razor Pruned: " << razorPruned;
+    std::cout << ", MultiCut Pruned: " << multiCutPruned;
     std::cout << ", Extensions: " << extensions;
     std::cout << ", IID Hits: " << iidHits << std::endl;
 }
@@ -47,6 +48,7 @@ void SearchStats::clear()
     nullReductions = 0;
     reverseFutilePruned = 0;
     razorPruned = 0;
+    multiCutPruned = 0;
     extensions = 0;
     iidHits = 0;
 }
@@ -73,7 +75,7 @@ AI::~AI()
 }
 
 // search
-int AI::search(Board& board, int depth, int ply, int alpha, int beta, auto start)
+int AI::search(Board& board, int depth, int ply, int alpha, int beta, bool cut, auto start)
 {
     // check for time
     auto end = std::chrono::high_resolution_clock::now();
@@ -125,9 +127,10 @@ int AI::search(Board& board, int depth, int ply, int alpha, int beta, auto start
     board.generateMoves(moves, numMoves);
 
     // check for mate/stalemate
+    bool friendlyKingInCheck = board.getCheckers() != 0;
     if (numMoves == 0)
     {
-        if (board.getCheckers() != 0)
+        if (friendlyKingInCheck)
         {
             return -MATE + ply;
         }
@@ -140,12 +143,15 @@ int AI::search(Board& board, int depth, int ply, int alpha, int beta, auto start
     /******************* 
      *     EXTENSIONS 
      *******************/
-    bool friendlyKingInCheck = board.getCheckers() != 0;
+    if (friendlyKingInCheck)
+    {
+        depth++;
+        searchStats_.extensions++;
+    }
 
     /******************* 
      *     PRUNING 
      *******************/
-
     if (!friendlyKingInCheck)
     {
         // razoring
@@ -176,7 +182,7 @@ int AI::search(Board& board, int depth, int ply, int alpha, int beta, auto start
             int R = depth > 6 ? MAX_R : MIN_R;
 
             // search
-            int score = -search(board, depth - R - 1, ply + 1, -beta, -beta + 1, start);
+            int score = -search(board, depth - R - 1, ply + 1, -beta, -beta + 1, !cut, start);
 
             // undo null move
             board.unmakeNullMove(ep);
@@ -194,6 +200,31 @@ int AI::search(Board& board, int depth, int ply, int alpha, int beta, auto start
         }
     }
 
+    // MULTI-CUT PRUNING
+
+    // sort moves 
+    scoreMoves(board, transpositionTable_, killerMoves_, moves, numMoves, ply);
+    sortMoves(moves, numMoves);
+
+    if (cut && depth >= MULTI_CUT_R)
+    {
+        int c = 0;
+        for (int i = 0; i < std::min(numMoves, MULTI_CUT_M); i++)
+        {
+            board.makeMove(moves[i]);
+            int score = -search(board, depth-1-MULTI_CUT_R, ply + 1, -beta, -beta + 1, i != 0, start);
+            board.unmakeMove(moves[i]);
+            if (score >= beta)
+            {
+                if (++c == MULTI_CUT_C) 
+                {
+                    searchStats_.multiCutPruned++;
+                    return beta; // mc-prune
+                }
+            }
+        }
+    }
+
     /******************************
      * INTERNAL ITERATIVE DEEPENING 
      ******************************/
@@ -201,7 +232,7 @@ int AI::search(Board& board, int depth, int ply, int alpha, int beta, auto start
     if ((ttMove.from == ttMove.to) && depth > MIN_IID_DEPTH)
     {
         // search with reduced depth
-        search(board, depth - IID_DR, ply, alpha, beta, start);
+        search(board, depth - IID_DR, ply, alpha, beta, cut, start);
 
         // check if the tt entry is now valid
         ttMove = transpositionTable_->getMove(board.getCurrentHash());
@@ -210,10 +241,6 @@ int AI::search(Board& board, int depth, int ply, int alpha, int beta, auto start
             searchStats_.iidHits++;
         }
     }
-
-    // sort moves 
-    scoreMoves(board, transpositionTable_, killerMoves_, moves, numMoves, ply);
-    sortMoves(moves, numMoves);
 
     // initialize transposition flag and best move
     Flag flag = UPPER_BOUND;
@@ -251,16 +278,16 @@ int AI::search(Board& board, int depth, int ply, int alpha, int beta, auto start
         int score;
         if (!lmrValid(board, moves[i], i, depth) || !pruningOk)
         {
-            score = -search(board, depth - 1, ply + 1, -beta, -alpha, start);
+            score = -search(board, depth - 1, ply + 1, -beta, -alpha, i != 0 && !cut, start);
         }
         else
         {
             int reduction = lmrReduction(i, depth);
-            score = -search(board, depth - 1 - reduction, ply + 1, -beta, -alpha, start);
+            score = -search(board, depth - 1 - reduction, ply + 1, -beta, -alpha, !cut, start);
             searchStats_.lmrReductions++;
             if (score > alpha)
             {
-                score = -search(board, depth - 1, ply + 1, -beta, -alpha, start);
+                score = -search(board, depth - 1, ply + 1, -beta, -alpha, !cut, start);
                 searchStats_.reSearches++;
                 searchStats_.lmrReductions--;
             }
@@ -349,10 +376,7 @@ int AI::quiesce(Board& board, int alpha, int beta)
     board.moveGenerationSetup();
     Move moves[MAX_MOVES_ATTACK];
     int numMoves = 0;
-    board.generateMoves(moves, numMoves, true, true);
-
-    // see if we're in check
-    bool friendlyKingInCheck = board.getCheckers() != 0;
+    board.generateMoves(moves, numMoves, true);
 
     // sort moves
     scoreMoves(board, transpositionTable_, killerMoves_, moves, numMoves, -1);
@@ -361,7 +385,7 @@ int AI::quiesce(Board& board, int alpha, int beta)
     // loop through moves
     for (int i = 0; i < numMoves; i++)
     {
-        if (moves[i].type < KNIGHT_PROMOTION && moves[i].type != EN_PASSANT && !friendlyKingInCheck) // dont prune promos, ep, or checks
+        if (moves[i].type < KNIGHT_PROMOTION && moves[i].type != EN_PASSANT) // dont prune promos or ep
         {
             int seeScore = see(board, moves[i].from, moves[i].to);
 
@@ -432,7 +456,7 @@ Move AI::getBestMove(Board& board)
         searchStats_.clear();
 
         // search
-        search(board, depth, 0, alpha, beta, start);
+        search(board, depth, 0, alpha, beta, false, start);
 
         // check for time
         auto end = std::chrono::high_resolution_clock::now();

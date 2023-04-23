@@ -37,6 +37,7 @@ struct SearchStats
     int nullReductions;
     int reverseFutilePruned;
     int razorPruned;
+    int multiCutPruned;
     int extensions;
     int iidHits;
 
@@ -54,7 +55,7 @@ class AI
         ~AI();
 
         // search methods
-        int search(Board& board, int depth, int ply, int alpha, int beta, auto start);
+        int search(Board& board, int depth, int ply, int alpha, int beta, bool cut, auto start);
         int quiesce(Board& board, int alpha, int beta);
         Move getBestMove(Board& board);
 

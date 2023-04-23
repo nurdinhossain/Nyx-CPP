@@ -20,24 +20,6 @@ int main()
 	processBishopAttacks("bishopAttackTable.txt");
 	processRookAttacks("rookAttackTable.txt");
 
-	// get user input
-	/*string input;
-	cout << "Enter a FEN string: ";
-	getline(cin, input);
-
-	// initialize board
-	Board board = Board(input);
-
-	// search
-	AI ai = AI();
-
-	// get best move
-	Move bestMove = ai.getBestMove(board);
-
-	// make move and print board
-	board.makeMove(bestMove);
-	board.print();*/
-
 	// create file to write to
 	/*ofstream file("positions.txt");
 
@@ -78,7 +60,25 @@ int main()
 	loadParameters("parameters.txt");
 
 	// tune (0.5 is the best k value)
-	tune("positions.txt", 0.5);
+	//tune("positions.txt", 0.5);
+
+	// get user input
+	string input;
+	cout << "Enter a FEN string: ";
+	getline(cin, input);
+
+	// initialize board
+	Board board = Board(input);
+
+	// search
+	AI ai = AI();
+
+	// get best move
+	Move bestMove = ai.getBestMove(board);
+
+	// make move and print board
+	board.makeMove(bestMove);
+	board.print();
 
 	return 0;
 }

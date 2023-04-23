@@ -37,6 +37,11 @@ const int MAX_PIECES = 16;
 const int MIN_IID_DEPTH = 5;
 const int IID_DR = 3;
 
+// Multi-cut 
+const int MULTI_CUT_R = 2;
+const int MULTI_CUT_C = 3;
+const int MULTI_CUT_M = 6;
+
 // methods for boosting search
 bool moveCausesCheck(Board& board, Move move);
 bool lmrValid(Board& board, Move move, int moveIndex, int depth);
