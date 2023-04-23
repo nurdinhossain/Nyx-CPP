@@ -198,7 +198,7 @@ void tune(string filename, float k)
     processFENs(filename, lines, results);
 
     // initialize best mse
-    float bestMSE = 1000000;
+    float bestMSE = mse(lines, results, k);
 
     // improved flag
     bool improved = true;
