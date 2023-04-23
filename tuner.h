@@ -15,6 +15,9 @@ void findBestK(string filename, float start, float end, float step);
 // vectorize parameters
 vector<int*> vectorizeParameters();
 
+// load in parameters from file
+void loadParameters(string filename);
+
 // copy vector parameters to pointer parameters
 void copyParametersToPointers(vector<int> parameters, vector<int*> pointers);
 

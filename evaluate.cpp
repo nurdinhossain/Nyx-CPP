@@ -11,18 +11,6 @@ int lazyEvaluate(Board& board)
     // material
     int openingScore = board.getMaterial(WHITE) - board.getMaterial(BLACK);
 
-    // adjust knight and rook values based on pawn count
-    int whitePawnCount = board.getPieceCount(WHITE, PAWN);
-    int blackPawnCount = board.getPieceCount(BLACK, PAWN);
-    int whiteKnightCount = board.getPieceCount(WHITE, KNIGHT);
-    int blackKnightCount = board.getPieceCount(BLACK, KNIGHT);
-    int whiteRookCount = board.getPieceCount(WHITE, ROOK);
-    int blackRookCount = board.getPieceCount(BLACK, ROOK);
-    openingScore -= (8 - whitePawnCount) * whiteKnightCount * KNIGHT_DECREASE_WITH_PAWN_LOSS;
-    openingScore += (8 - blackPawnCount) * blackKnightCount * KNIGHT_DECREASE_WITH_PAWN_LOSS;
-    openingScore += (8 - whitePawnCount) * whiteRookCount * ROOK_INCREASE_WITH_PAWN_LOSS;
-    openingScore -= (8 - blackPawnCount) * blackRookCount * ROOK_INCREASE_WITH_PAWN_LOSS;
-
     // ensure endgame score equals opening score for material
     int endgameScore = openingScore;
 
@@ -38,14 +26,6 @@ int lazyEvaluate(Board& board)
         endgameScore -= BISHOP_PAIR;
     }
 
-    // bishop mobility
-    int whiteOpeningBishopMobilityScore = 0, whiteEndgameBishopMobilityScore = 0;
-    int blackOpeningBishopMobilityScore = 0, blackEndgameBishopMobilityScore = 0;
-    bishopMobility(board, WHITE, whiteOpeningBishopMobilityScore, whiteEndgameBishopMobilityScore);
-    bishopMobility(board, BLACK, blackOpeningBishopMobilityScore, blackEndgameBishopMobilityScore);
-    openingScore += whiteOpeningBishopMobilityScore - blackOpeningBishopMobilityScore;
-    endgameScore += whiteEndgameBishopMobilityScore - blackEndgameBishopMobilityScore;
-
     // king score
     int whiteOpeningKingScore = 0, whiteEndgameKingScore = 0;
     int blackOpeningKingScore = 0, blackEndgameKingScore = 0;
@@ -53,9 +33,6 @@ int lazyEvaluate(Board& board)
     kingScore(board, BLACK, blackOpeningKingScore, blackEndgameKingScore);
     openingScore += whiteOpeningKingScore - blackOpeningKingScore;
     endgameScore += whiteEndgameKingScore - blackEndgameKingScore;
-
-    // tempo bonus
-    openingScore += TEMPO_BONUS * (board.getNextMove() == WHITE ? 1 : -1);
 
     // piece square tables
     openingScore += board.getStaticEvalOpening();
@@ -75,18 +52,6 @@ int evaluate(Board& board, PawnTable* pawnTable)
 
     // material
     int openingScore = board.getMaterial(WHITE) - board.getMaterial(BLACK);
-
-    // adjust knight and rook values based on pawn count
-    int whitePawnCount = board.getPieceCount(WHITE, PAWN);
-    int blackPawnCount = board.getPieceCount(BLACK, PAWN);
-    int whiteKnightCount = board.getPieceCount(WHITE, KNIGHT);
-    int blackKnightCount = board.getPieceCount(BLACK, KNIGHT);
-    int whiteRookCount = board.getPieceCount(WHITE, ROOK);
-    int blackRookCount = board.getPieceCount(BLACK, ROOK);
-    openingScore -= (8 - whitePawnCount) * whiteKnightCount * KNIGHT_DECREASE_WITH_PAWN_LOSS;
-    openingScore += (8 - blackPawnCount) * blackKnightCount * KNIGHT_DECREASE_WITH_PAWN_LOSS;
-    openingScore += (8 - whitePawnCount) * whiteRookCount * ROOK_INCREASE_WITH_PAWN_LOSS;
-    openingScore -= (8 - blackPawnCount) * blackRookCount * ROOK_INCREASE_WITH_PAWN_LOSS;
 
     // ensure endgame score equals opening score for material
     int endgameScore = openingScore;
@@ -146,9 +111,6 @@ int evaluate(Board& board, PawnTable* pawnTable)
     kingScore(board, BLACK, blackOpeningKingScore, blackEndgameKingScore);
     openingScore += whiteOpeningKingScore - blackOpeningKingScore;
     endgameScore += whiteEndgameKingScore - blackEndgameKingScore;
-
-    // tempo bonus
-    openingScore += TEMPO_BONUS * (board.getNextMove() == WHITE ? 1 : -1);
 
     // piece square tables
     openingScore += board.getStaticEvalOpening();
@@ -311,10 +273,6 @@ void rookScore(Board& board, Color color, int& openingScore, int& endgameScore)
         {
             openingScore += ROOK_OPEN_FILE;
         }
-        else if (halfOpenFile(board, color, file))
-        {
-            openingScore += ROOK_HALF_OPEN_FILE;
-        }
 
         // check if rook is blocked by king
         if (kingBlockRook(board, color, square))
@@ -406,12 +364,6 @@ void pawnScore(Board& board, Color color, int& openingScore, int& endgameScore)
         // check if pawn is protected
         bool pawnIsProtected = isProtected(board, color, square);
 
-        // small penalty for unprotected pawn
-        if (!pawnIsProtected)
-        {
-            openingScore -= UNPROTECTED_PAWN_PENALTY;
-        }
-
         // check if pawn is passed
         if (isPassed(board, color, square))
         {
@@ -422,13 +374,6 @@ void pawnScore(Board& board, Color color, int& openingScore, int& endgameScore)
             if (isOutside(board, color, square))
             {
                 endgameScore += OUTSIDE_PASSED_PAWN;
-            }
-
-            // check if pawn is protected
-            if (pawnIsProtected)
-            {
-                openingScore += PROTECTED_PASSED_PAWN;
-                endgameScore += PROTECTED_PASSED_PAWN;
             }
         }
 
@@ -442,15 +387,8 @@ void pawnScore(Board& board, Color color, int& openingScore, int& endgameScore)
         else if (isBackward(board, color, square))
         {
             openingScore -= BACKWARD_PAWN_PENALTY;
-            endgameScore -= BACKWARD_PAWN_PENALTY;
         }
-
-        // check if pawn is doubled
-        if (isDoubled(board, color, square))
-        {
-            openingScore -= DOUBLED_PAWN_PENALTY;
-        }
-
+        
         pawns &= pawns - 1;
     }
 }
@@ -514,7 +452,7 @@ void kingScore(Board& board, Color color, int& openingScore, int& endgameScore)
     openingScore += kingPawnShieldScore(board, color, kingIndex) * PAWN_SHIELD * board.getMaterial(static_cast<Color>(1 - color)) / PAWN_SHIELD_DIVISOR;
 
     // penalty for being stormed by enemy pawns
-    openingScore -= kingPawnStormScore(board, color, kingIndex) * PAWN_STORM * board.getMaterial(static_cast<Color>(1 - color)) / PAWN_SHIELD_DIVISOR;
+    openingScore -= kingPawnStormScore(board, color, kingIndex) * PAWN_STORM * board.getMaterial(static_cast<Color>(1 - color)) / PAWN_STORM_DIVISOR;
 
     // check for king on open file
     int file = kingIndex % 8;

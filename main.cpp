@@ -23,14 +23,13 @@ int main()
 	// get user input
 	/*string input;
 	cout << "Enter a FEN string: ";
-	getline(cin, input);*/
+	getline(cin, input);
 
 	// initialize board
-	//Board board = Board(input);
-	//std::cout << "Board initialized" << std::endl;
+	Board board = Board(input);
 
 	// search
-	/*AI ai = AI();
+	AI ai = AI();
 
 	// get best move
 	Move bestMove = ai.getBestMove(board);
@@ -43,7 +42,7 @@ int main()
 	/*ofstream file("positions.txt");
 
 	// process PGN file into games
-	std::vector<std::vector<std::string>> games = processPGN("book_games.pgn", 1000);
+	std::vector<std::vector<std::string>> games = processPGN("book_games.pgn", 5000);
 	std::cout << "Games processed" << std::endl;
 
 	// process games into FENs
@@ -51,22 +50,18 @@ int main()
 	{
 		std::vector<std::string> fens = processGame(games[i]);
 
-		// remove first 85% and last 10% of FENs
-		if (fens.size() >= 10)
+		// remove first 5 fens and last fen
+		if (fens.size() > 6)
 		{
-			// remove first 80%
-			int first = fens.size() * 0.85;
-			fens.erase(fens.begin(), fens.begin() + first);
+			fens.erase(fens.begin(), fens.begin() + 5);
+			fens.pop_back();
+		}
 
-			// remove last 10%
-			int last = fens.size() * 0.1;
-			fens.erase(fens.end() - last, fens.end());
-
-			// write to file
-			for (int j = 0; j < fens.size(); j++)
-			{
-				file << fens[j] << endl;
-			}
+		// pick one random fen and write to file
+		if (fens.size() > 0)
+		{
+			int index = rand() % fens.size();
+			file << fens[index] << std::endl;
 		}
 
 		// print progress
@@ -78,6 +73,9 @@ int main()
 
 	// close file
 	file.close();*/
+
+	// load parameters
+	loadParameters("parameters.txt");
 
 	// tune (0.5 is the best k value)
 	tune("positions.txt", 0.5);

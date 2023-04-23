@@ -115,23 +115,17 @@ std::vector<int*> vectorizeParameters()
     }
 
     parameters.push_back(&PASSED_PAWN);
-    parameters.push_back(&PROTECTED_PASSED_PAWN);
     parameters.push_back(&OUTSIDE_PASSED_PAWN);
     parameters.push_back(&BACKWARD_PAWN_PENALTY);
     parameters.push_back(&ISOLATED_PAWN_PENALTY);
-    parameters.push_back(&UNPROTECTED_PAWN_PENALTY);
-    parameters.push_back(&DOUBLED_PAWN_PENALTY);
 
-    parameters.push_back(&KNIGHT_DECREASE_WITH_PAWN_LOSS);
     parameters.push_back(&KNIGHT_OUTPOST);
     parameters.push_back(&KNIGHT_OUTPOST_ON_HOLE);
 
     parameters.push_back(&BISHOP_PAIR);
     parameters.push_back(&BISHOP_MOBILITY);
 
-    parameters.push_back(&ROOK_INCREASE_WITH_PAWN_LOSS);
     parameters.push_back(&ROOK_OPEN_FILE);
-    parameters.push_back(&ROOK_HALF_OPEN_FILE);
 
     parameters.push_back(&KING_BLOCK_ROOK_PENALTY);
     parameters.push_back(&KING_OPEN_FILE_PENALTY);
@@ -141,10 +135,36 @@ std::vector<int*> vectorizeParameters()
     parameters.push_back(&PAWN_SHIELD);
     parameters.push_back(&PAWN_STORM);
     parameters.push_back(&PAWN_SHIELD_DIVISOR);
-    parameters.push_back(&TEMPO_BONUS);
+    parameters.push_back(&PAWN_STORM_DIVISOR);
 
     return parameters;
 }   
+
+void loadParameters(string filename)
+{
+    ifstream file(filename);
+    string line;
+    int i = 0;
+    vector<int*> parameters = vectorizeParameters();
+
+    // split comma-separated values
+    while (getline(file, line))
+    {
+        string delimiter = ",";
+        size_t pos = 0;
+        string token;
+        while ((pos = line.find(delimiter)) != string::npos)
+        {
+            // get token
+            token = line.substr(0, pos);
+            *parameters[i] = stoi(token);
+            line.erase(0, pos + delimiter.length());
+            i++;
+        }
+        *parameters[i] = stoi(line);
+        i++;
+    }
+}
 
 // copy vector parameters to pointer parameters
 void copyParametersToPointers(vector<int> parameters, vector<int*> pointers)
@@ -196,9 +216,6 @@ void tune(string filename, float k)
             // get original parameter
             int originalParameter = *parameter;
 
-            // get original mse
-            float originalMSE = mse(lines, results, k);
-
             // increase parameter
             *parameter = originalParameter + 1;
             float increasedMSE = mse(lines, results, k);
@@ -210,32 +227,38 @@ void tune(string filename, float k)
             // reset parameter
             *parameter = originalParameter;
 
-            // if increased mse is less than original mse, increase parameter
-            if (increasedMSE < originalMSE)
+            // update parameter if improved
+            if (increasedMSE < bestMSE && decreasedMSE < bestMSE)
+            {
+                if (increasedMSE < decreasedMSE)
+                {
+                    *parameter = originalParameter + 1;
+                }
+                else
+                {
+                    *parameter = originalParameter - 1;
+                }
+                improved = true;
+            }
+            else if (increasedMSE < bestMSE)
             {
                 *parameter = originalParameter + 1;
                 improved = true;
             }
-
-            // if decreased mse is less than original mse, decrease parameter
-            else if (decreasedMSE < originalMSE)
+            else if (decreasedMSE < bestMSE)
             {
                 *parameter = originalParameter - 1;
                 improved = true;
             }
 
-            // if mse is less than best mse, update best mse
-            if (originalMSE < bestMSE)
-            {
-                bestMSE = originalMSE;
-            }
+            // update best mse
+            bestMSE = min(bestMSE, min(increasedMSE, decreasedMSE));
 
-            // print parameter, original mse, increased mse, decreased mse, and best mse
+            // print parameter and mses
             cout << "Parameter: " << i << endl;
-            cout << "Original MSE: " << originalMSE << endl;
+            cout << "Original MSE: " << bestMSE << endl;
             cout << "Increased MSE: " << increasedMSE << endl;
             cout << "Decreased MSE: " << decreasedMSE << endl;
-            cout << "Best MSE: " << bestMSE << endl;
         }
 
         // save parameters every iteration

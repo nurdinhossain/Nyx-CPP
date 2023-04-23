@@ -10,6 +10,14 @@ const int MAX_MOVES_ATTACK = 64;
 const int MAX_TIME = 120;
 const int KILLER_MAX_PLY = 64;
 
+// enum for staged move ordering
+enum STAGE
+{
+    HASH_STAGE,
+    LOUD_STAGE,
+    QUIET_STAGE
+};
+
 // struct for gathering statistics about the search
 struct SearchStats
 {
