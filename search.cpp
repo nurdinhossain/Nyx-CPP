@@ -143,11 +143,6 @@ int AI::search(Board& board, int depth, int ply, int alpha, int beta, bool cut, 
     /******************* 
      *     EXTENSIONS 
      *******************/
-    if (friendlyKingInCheck)
-    {
-        depth++;
-        searchStats_.extensions++;
-    }
 
     /******************* 
      *     PRUNING 
