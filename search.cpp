@@ -85,6 +85,9 @@ int AI::search(Board& board, int depth, int ply, int alpha, int beta, bool cut, 
         return NEG_INF;
     }
 
+    // check if this is a pv node
+    bool pvNode = (beta - alpha) > 1;
+
     // increment nodes
     searchStats_.nodes++;
 
@@ -147,7 +150,7 @@ int AI::search(Board& board, int depth, int ply, int alpha, int beta, bool cut, 
     /******************* 
      *     PRUNING 
      *******************/
-    if (!friendlyKingInCheck)
+    if (!friendlyKingInCheck && !pvNode)
     {
         // razoring
         if (razorOk(board, depth, alpha))
@@ -250,7 +253,7 @@ int AI::search(Board& board, int depth, int ply, int alpha, int beta, bool cut, 
     {
         // see if move causes check
         bool causesCheck = moveCausesCheck(board, moves[i]);
-        bool pruningOk = !causesCheck && !friendlyKingInCheck;
+        bool pruningOk = !causesCheck && !friendlyKingInCheck && !pvNode;
 
         // late move pruning
         if (lmpOk(board, moves[i], i, depth) && pruningOk)
@@ -271,20 +274,25 @@ int AI::search(Board& board, int depth, int ply, int alpha, int beta, bool cut, 
 
         // search
         int score;
-        if (!lmrValid(board, moves[i], i, depth) || !pruningOk)
+        if (i == 0)
         {
-            score = -search(board, depth - 1, ply + 1, -beta, -alpha, i != 0 && !cut, start);
+            score = -search(board, depth - 1, ply + 1, -beta, -alpha, false, start);
         }
         else
         {
-            int reduction = lmrReduction(i, depth);
-            score = -search(board, depth - 1 - reduction, ply + 1, -beta, -alpha, !cut, start);
+            // LMR 
+            int reduction = 0;
+            if (lmrValid(board, moves[i], i, depth) && pruningOk) reduction = lmrReduction(i, depth);
+
+            // get score
+            score = -search(board, depth - 1 - reduction, ply + 1, -alpha - 1, -alpha, !cut, start);
             searchStats_.lmrReductions++;
-            if (score > alpha)
+
+            // re-search if necessary
+            if (score > alpha && score < beta)
             {
                 score = -search(board, depth - 1, ply + 1, -beta, -alpha, !cut, start);
                 searchStats_.reSearches++;
-                searchStats_.lmrReductions--;
             }
         }
 
