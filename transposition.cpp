@@ -57,6 +57,12 @@ Move TranspositionTable::getMove(UInt64 key)
     // get the entry
     Entry* entry = probe(key);
 
+    // ensure the key matches
+    if (entry->key != key)
+    {
+        return Move();
+    }
+
     // return the move
     return entry->move;
 }
