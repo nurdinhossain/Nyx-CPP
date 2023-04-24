@@ -289,7 +289,13 @@ int AI::search(Board& board, int depth, int ply, int alpha, int beta, bool cut, 
             searchStats_.lmrReductions++;
 
             // re-search if necessary
-            if (score > alpha && score < beta)
+            if (score > alpha && reduction > 0)
+            {
+                score = -search(board, depth - 1, ply + 1, -beta, -alpha, !cut, start);
+                searchStats_.lmrReductions--;
+                searchStats_.reSearches++;
+            }
+            else if (score > alpha && score < beta)
             {
                 score = -search(board, depth - 1, ply + 1, -beta, -alpha, !cut, start);
                 searchStats_.reSearches++;
