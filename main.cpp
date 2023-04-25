@@ -24,10 +24,11 @@ int main()
 	/*ofstream file("positions.txt");
 
 	// process PGN file into games
-	std::vector<std::vector<std::string>> games = processPGN("book_games.pgn", 5000);
+	std::vector<std::vector<std::string>> games = processPGN("book_games.pgn", 10000);
 	std::cout << "Games processed" << std::endl;
 
 	// process games into FENs
+	int total = 0;
 	for (int i = 0; i < games.size(); i++)
 	{
 		std::vector<std::string> fens = processGame(games[i]);
@@ -37,13 +38,12 @@ int main()
 		{
 			fens.erase(fens.begin(), fens.begin() + 5);
 			fens.pop_back();
-		}
 
-		// pick one random fen and write to file
-		if (fens.size() > 0)
-		{
-			int index = rand() % fens.size();
-			file << fens[index] << std::endl;
+			for (int k = 0; k < fens.size(); k++)
+			{
+				file << fens[k] << std::endl;
+				total++;
+			}
 		}
 
 		// print progress
@@ -54,6 +54,7 @@ int main()
 	}
 
 	// close file
+	std::cout << total << std::endl;
 	file.close();*/
 
 	// load parameters

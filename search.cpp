@@ -150,6 +150,9 @@ int AI::search(Board& board, int depth, int ply, int alpha, int beta, bool cut, 
     /******************* 
      *     PRUNING 
      *******************/
+    // sort moves 
+    scoreMoves(board, transpositionTable_, killerMoves_, moves, numMoves, ply);
+    sortMoves(moves, numMoves);
     if (!friendlyKingInCheck && !pvNode)
     {
         // razoring
@@ -196,28 +199,23 @@ int AI::search(Board& board, int depth, int ply, int alpha, int beta, bool cut, 
                 }
             }
         }
-    }
 
-    // MULTI-CUT PRUNING
-
-    // sort moves 
-    scoreMoves(board, transpositionTable_, killerMoves_, moves, numMoves, ply);
-    sortMoves(moves, numMoves);
-
-    if (cut && depth >= MULTI_CUT_R)
-    {
-        int c = 0;
-        for (int i = 0; i < std::min(numMoves, MULTI_CUT_M); i++)
+        // multi-cut pruning
+        if (cut && depth >= MULTI_CUT_R)
         {
-            board.makeMove(moves[i]);
-            int score = -search(board, depth-1-MULTI_CUT_R, ply + 1, -beta, -beta + 1, i != 0, start);
-            board.unmakeMove(moves[i]);
-            if (score >= beta)
+            int c = 0;
+            for (int i = 0; i < std::min(numMoves, MULTI_CUT_M); i++)
             {
-                if (++c == MULTI_CUT_C) 
+                board.makeMove(moves[i]);
+                int score = -search(board, depth-1-MULTI_CUT_R, ply + 1, -beta, -beta + 1, i != 0, start);
+                board.unmakeMove(moves[i]);
+                if (score >= beta)
                 {
-                    searchStats_.multiCutPruned++;
-                    return beta; // mc-prune
+                    if (++c == MULTI_CUT_C) 
+                    {
+                        searchStats_.multiCutPruned++;
+                        return beta; // mc-prune
+                    }
                 }
             }
         }
