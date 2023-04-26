@@ -5,6 +5,7 @@
 // inf/mate/draw
 extern const int POS_INF;
 extern const int NEG_INF;
+extern const int FAIL_SCORE;
 extern const int MATE;
 extern const int DRAW;
 extern const int MATE_BUFFER;

@@ -58,7 +58,7 @@ Move TranspositionTable::getMove(UInt64 key)
     Entry* entry = probe(key);
 
     // ensure the key matches
-    if (entry->key != key)
+    if (!verifyEntry(key, entry))
     {
         return Move();
     }
@@ -99,6 +99,35 @@ int TranspositionTable::correctScoreRead(int score, int ply)
     return score;
 }
 
+bool TranspositionTable::verifyEntry(UInt64 key, Entry* entry)
+{
+    UInt64 entryKey = entry->key;
+
+    // unwrap all the xor'd components
+    Move move = entry->move;
+
+    // move.to
+    entryKey ^= move.to;
+
+    // move.from
+    entryKey ^= ((UInt64)move.from << 6);
+
+    // move.type
+    entryKey ^= ((UInt64)move.type << 12);
+
+    // score
+    entryKey ^= ((UInt64)entry->score << 16);
+
+    // depth
+    entryKey ^= ((UInt64)entry->depth << 34);
+
+    // flag
+    entryKey ^= ((UInt64)entry->flag << 40);
+
+    // check if entryKey matches key
+    return entryKey == key;
+}
+
 // store/access
 Entry* TranspositionTable::probe(UInt64 key)
 {
@@ -111,14 +140,40 @@ Entry* TranspositionTable::probe(UInt64 key)
 
 void TranspositionTable::store(UInt64 key, Flag flag, int depth, int ply, int score, Move move)
 {
+    // if score is a fail score, don't store it
+    if (abs(score) == abs(FAIL_SCORE))
+    {
+        return;
+    }
+
     // get the entry
     Entry* entry = probe(key);
 
+    // store the data in a thread-safe manner
+    UInt64 newKey = key;
+    int correctScore = correctScoreStore(score, ply);
+
+    // first hash move
+    Square from = move.from, to = move.to;
+    MoveType type = move.type;
+    newKey ^= to; 
+    newKey ^= ((UInt64)from << 6);
+    newKey ^= ((UInt64)type << 12);
+    
+    // then hash score
+    newKey ^= ((UInt64)correctScore << 16);
+
+    // then hash depth
+    newKey ^= ((UInt64)depth << 34);
+
+    // then hash flag
+    newKey ^= ((UInt64)flag << 40);
+
     // store the data
-    entry->key = key;
+    entry->key = newKey;
     entry->flag = flag;
     entry->depth = depth;
-    entry->score = correctScoreStore(score, ply);
+    entry->score = correctScore;
     entry->move = move;
 }
 
@@ -128,9 +183,9 @@ int TranspositionTable::getScore(UInt64 key, int depth, int ply, int alpha, int 
     Entry* entry = probe(key);
 
     // ensure the key matches
-    if (entry->key != key)
+    if (!verifyEntry(key, entry))
     {
-        return NEG_INF;
+        return FAIL_SCORE;
     }
 
     // if key does match, check if the depth is sufficient
@@ -161,5 +216,5 @@ int TranspositionTable::getScore(UInt64 key, int depth, int ply, int alpha, int 
     }
 
     // return negative infinity
-    return NEG_INF;
+    return FAIL_SCORE;
 }

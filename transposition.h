@@ -15,11 +15,11 @@ enum Flag
 // struct for storing transposition table entries
 struct Entry
 {
-    UInt64 key;
-    Flag flag;
-    int depth;
-    int score;
-    Move move;
+    UInt64 key{0ULL};
+    Flag flag{EXACT};
+    int depth{0};
+    int score{0};
+    Move move{Move()};
 };
 
 // class for transposition table
@@ -36,6 +36,7 @@ class TranspositionTable
         Move getMove(UInt64 key);
         int correctScoreStore(int score, int ply);
         int correctScoreRead(int score, int ply);
+        bool verifyEntry(UInt64 key, Entry* entry);
 
         // store/access
         void store(UInt64 key, Flag flag, int depth, int ply, int score, Move move);

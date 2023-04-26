@@ -7,9 +7,9 @@ const int PAWN_HASH_SIZE = 16; // in MB
 // struct for storing pawn hash entries
 struct PawnEntry 
 {
-    UInt64 key;
-    int openingScore;
-    int endgameScore;
+    UInt64 key{0ULL};
+    int openingScore{0};
+    int endgameScore{0};
 };
 
 // class for transposition table

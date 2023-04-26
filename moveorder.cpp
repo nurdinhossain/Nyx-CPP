@@ -5,7 +5,9 @@
 void scoreMoves(Board& board, TranspositionTable* tt, Move killerMoves[][2], Move moves[], int numMoves, int ply) 
 {
     // check for tt move
-    Move ttMove = tt->getMove(board.getCurrentHash());
+    Move ttMove;
+    if (tt != NULL)
+        ttMove = tt->getMove(board.getCurrentHash());
 
     for (int i = 0; i < numMoves; i++) 
     {

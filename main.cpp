@@ -71,15 +71,18 @@ int main()
 	// initialize board
 	Board board = Board(input);
 
-	// search
-	AI ai = AI();
+	// initialize transposition table
+	TranspositionTable* tt = new TranspositionTable(256);
 
-	// get best move
-	Move bestMove = ai.getBestMove(board);
+	// search
+	Move bestMove = threadedSearch(board, tt);
 
 	// make move and print board
 	board.makeMove(bestMove);
 	board.print();
+
+	// delete transposition table
+	delete tt;
 
 	return 0;
 }

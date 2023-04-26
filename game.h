@@ -78,13 +78,13 @@ enum Phase
 
 struct Move
 {
-    MoveType type;
-    Square from;
-    Square to;
-    Piece pieceTaken;
-    int oldCastle;
-    Square oldEnPassant;
-    int score;
+    MoveType type{QUIET};
+    Square from{NONE};
+    Square to{NONE};
+    Piece pieceTaken{EMPTY};
+    int oldCastle{0};
+    Square oldEnPassant{NONE};
+    int score{0};
 };
 
 constexpr UInt64 FILLED_BOARD = 0xFFFFFFFFFFFFFFFFULL;

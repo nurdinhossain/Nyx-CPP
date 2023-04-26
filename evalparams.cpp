@@ -5,6 +5,7 @@
 // inf/mate/draw
 const int POS_INF = 100000;
 const int NEG_INF = -100000;
+const int FAIL_SCORE = -1000000;
 const int MATE = 99000;
 const int DRAW = 0;
 const int MATE_BUFFER = 999;
