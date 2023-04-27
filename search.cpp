@@ -144,11 +144,6 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
      *     EXTENSIONS 
      *******************/
     int extensions = 0;
-    if (friendlyKingInCheck)
-    {
-        extensions += 1;
-        searchStats_.extensions++;
-    }
 
     /******************* 
      *     PRUNING 
