@@ -58,7 +58,7 @@ class AI
 
         // search methods
         int search(Board& board, TranspositionTable* transpositionTable_, int depth, int ply, int alpha, int beta, bool cut, std::chrono::steady_clock::time_point start);
-        Move getBestMove(Board& board, TranspositionTable* transpositionTable_, bool verbose);
+        Move getBestMove(Board& board, TranspositionTable* transpositionTable_, int increment, bool verbose);
         int quiesce(Board& board, int alpha, int beta);
 
     private:

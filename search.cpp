@@ -436,7 +436,7 @@ int AI::quiesce(Board& board, int alpha, int beta)
     return alpha;
 }
 
-Move AI::getBestMove(Board& board, TranspositionTable* transpositionTable_, bool verbose)
+Move AI::getBestMove(Board& board, TranspositionTable* transpositionTable_, int increment, bool verbose)
 {
     // initialize variables
     Move bestMove = Move();
@@ -480,7 +480,7 @@ Move AI::getBestMove(Board& board, TranspositionTable* transpositionTable_, bool
         }
 
         // increment depth
-        depth++; 
+        depth += increment;
     }
 
     // return best move
@@ -502,11 +502,11 @@ Move threadedSearch(Board& board, TranspositionTable* transpositionTable_)
         slaves[i] = new AI();
 
         // start threads
-        threads[i] = std::thread(&AI::getBestMove, std::ref(*slaves[i]), std::ref(*boards[i]), transpositionTable_, false);
+        threads[i] = std::thread(&AI::getBestMove, std::ref(*slaves[i]), std::ref(*boards[i]), transpositionTable_, 1, false);
     }
 
     // main thread
-    Move bestMove = master.getBestMove(board, transpositionTable_, true);
+    Move bestMove = master.getBestMove(board, transpositionTable_, 1, true);
 
     // stop threads
     for (int i = 0; i < THREADS; i++)
