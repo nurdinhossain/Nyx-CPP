@@ -143,6 +143,12 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
     /******************* 
      *     EXTENSIONS 
      *******************/
+    int extensions = 0;
+    if (friendlyKingInCheck)
+    {
+        extensions += 1;
+        searchStats_.extensions++;
+    }
 
     /******************* 
      *     PRUNING 
@@ -152,7 +158,7 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
     scoreMoves(board, transpositionTable_, killerMoves_, moves, numMoves, ply);
     sortMoves(moves, numMoves);
 
-    if (!friendlyKingInCheck && !pvNode)
+    if (!friendlyKingInCheck && !pvNode && extensions == 0)
     {
         // razoring
         if (razorOk(board, depth, alpha))
@@ -249,7 +255,7 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
     {
         // see if move causes check
         bool causesCheck = moveCausesCheck(board, moves[i]);
-        bool pruningOk = !causesCheck && !friendlyKingInCheck && !pvNode;
+        bool pruningOk = !causesCheck && !friendlyKingInCheck && !pvNode && extensions == 0;
 
         // late move pruning
         if (lmpOk(board, moves[i], i, depth) && pruningOk)
@@ -272,7 +278,7 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
         int score;
         if (i == 0)
         {
-            score = -search(board, transpositionTable_, depth - 1, ply + 1, -beta, -alpha, false, start);
+            score = -search(board, transpositionTable_, depth - 1 + extensions, ply + 1, -beta, -alpha, false, start);
         }
         else
         {
@@ -281,19 +287,19 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
             if (lmrValid(board, moves[i], i, depth) && pruningOk) reduction = lmrReduction(i, depth);
 
             // get score
-            score = -search(board, transpositionTable_, depth - 1 - reduction, ply + 1, -alpha - 1, -alpha, !cut, start);
+            score = -search(board, transpositionTable_, depth - 1 - reduction + extensions, ply + 1, -alpha - 1, -alpha, !cut, start);
             searchStats_.lmrReductions++;
 
             // re-search if necessary
             if (score > alpha && reduction > 0)
             {
-                score = -search(board, transpositionTable_, depth - 1, ply + 1, -beta, -alpha, !cut, start);
+                score = -search(board, transpositionTable_, depth - 1 + extensions, ply + 1, -beta, -alpha, !cut, start);
                 searchStats_.lmrReductions--;
                 searchStats_.reSearches++;
             }
             else if (score > alpha && score < beta)
             {
-                score = -search(board, transpositionTable_, depth - 1, ply + 1, -beta, -alpha, !cut, start);
+                score = -search(board, transpositionTable_, depth - 1 + extensions, ply + 1, -beta, -alpha, !cut, start);
                 searchStats_.reSearches++;
             }
         }
