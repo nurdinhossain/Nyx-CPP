@@ -38,7 +38,7 @@ const int MIN_IID_DEPTH = 5;
 const int IID_DR = 3;
 
 // Multi-cut 
-const int MULTI_CUT_R = 4;
+const int MULTI_CUT_R = 3;
 const int MULTI_CUT_C = 3;
 const int MULTI_CUT_M = 6;
 

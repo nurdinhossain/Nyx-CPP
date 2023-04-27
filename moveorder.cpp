@@ -2,7 +2,7 @@
 #include "tables.h"
 
 // score moves based on MVV/LVA
-void scoreMoves(Board& board, TranspositionTable* tt, Move killerMoves[][2], Move moves[], int numMoves, int ply) 
+void scoreMoves(Board& board, TranspositionTable* tt, Move killerMoves[][2], Move moves[], int historyTable[2][64][64], int historyMax, int numMoves, int ply) 
 {
     // check for tt move
     Move ttMove;
@@ -63,6 +63,9 @@ void scoreMoves(Board& board, TranspositionTable* tt, Move killerMoves[][2], Mov
             }
         }
 
+        // check for history move
+        moves[i].score += (historyTable[board.getNextMove()][move.from][move.to] / historyMax) * 100;
+
         // get positional gain from move
         Color color = board.getNextMove();
         Piece piece = extractPiece(board.getSquareToPiece(move.from));
@@ -72,7 +75,7 @@ void scoreMoves(Board& board, TranspositionTable* tt, Move killerMoves[][2], Mov
         int phase = board.getPhase();
         int fromScore = (openingFrom * (256 - phase) + endgameFrom * phase) / 256;
         int toScore = (openingTo * (256 - phase) + endgameTo * phase) / 256;
-        moves[i].score = toScore - fromScore;  
+        moves[i].score = toScore - fromScore;
     }
 }
 

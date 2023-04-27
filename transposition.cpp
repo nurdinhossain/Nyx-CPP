@@ -16,6 +16,7 @@ TranspositionTable::TranspositionTable()
     // initialize array
     table_ = new Entry[size_];
 
+    // print size
     std::cout << "Transposition table size: " << size_ << std::endl;
 }
 
@@ -29,6 +30,9 @@ TranspositionTable::TranspositionTable(int mb)
 
     // initialize array
     table_ = new Entry[size_];
+
+    // print size
+    std::cout << "Transposition table size: " << size_ << std::endl;
 }
 
 TranspositionTable::~TranspositionTable()
@@ -116,7 +120,7 @@ Entry* TranspositionTable::probe(UInt64 key)
     return &table_[index];
 }
 
-void TranspositionTable::store(UInt64 key, Flag flag, int depth, int ply, int score, Move move)
+void TranspositionTable::store(UInt64 key, Flag flag, int depth, int ply, int score, Move move, bool depthPreferred)
 {
     // if score is a fail score, don't store it
     if (abs(score) == abs(FAIL_SCORE))
@@ -126,6 +130,15 @@ void TranspositionTable::store(UInt64 key, Flag flag, int depth, int ply, int sc
 
     // get the entry
     Entry* entry = probe(key);
+
+    // only replace if the depth is greater than the current depth and the depth is preferred
+    if (depthPreferred)
+    {
+        if (depth < ((entry->data >> 34) & 0x3F))
+        {
+            return;
+        }
+    }
 
     // store the data in a thread-safe manner
     UInt64 smpKey = key;
@@ -156,7 +169,7 @@ void TranspositionTable::store(UInt64 key, Flag flag, int depth, int ply, int sc
     entry->data = data;
 }
 
-int TranspositionTable::getScore(UInt64 key, int depth, int ply, int alpha, int beta)
+int TranspositionTable::getScore(UInt64 key, int depth, int ply, int alpha, int beta, bool pvNode)
 {
     // get the entry
     Entry* entry = probe(key);

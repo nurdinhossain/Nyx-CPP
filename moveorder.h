@@ -18,7 +18,7 @@ const int CAPTURE_OFFSET = 99999;
 const int KILLER_VALUE = 10;
 
 // score moves based on MVV/LVA
-void scoreMoves(Board& board, TranspositionTable* tt, Move killerMoves[][2], Move moves[], int numMoves, int ply);
+void scoreMoves(Board& board, TranspositionTable* tt, Move killerMoves[][2], Move moves[], int historyTable[2][64][64], int historyMax, int numMoves, int ply);
 
 // sort moves based on score
 void sortMoves(Move moves[], int numMoves);

@@ -10,7 +10,7 @@ const int MAX_MOVES = 256;
 const int MAX_MOVES_ATTACK = 64;
 const int MAX_TIME = 120;
 const int KILLER_MAX_PLY = 64;
-const int THREADS = 7;
+const int THREADS = 6;
 
 // enum for staged move ordering
 enum STAGE
@@ -52,8 +52,14 @@ struct SearchStats
 class AI
 {
     public:
+        // public fields
+        Move killerMoves_[KILLER_MAX_PLY][2];
+        int historyTable_[2][64][64];
+        int historyMax_ = 1;
+
         // constructor/destructor
         AI();
+        AI(bool depthPreferred);
         ~AI();
 
         // search methods
@@ -61,14 +67,20 @@ class AI
         Move getBestMove(Board& board, TranspositionTable* transpositionTable_, int increment, bool verbose);
         int quiesce(Board& board, int alpha, int beta);
 
+        // history table methods
+        void ageHistory();
+
+        // getters
+        SearchStats& getSearchStats() { return searchStats_; }
+
     private:
         // private fields
         PawnTable* pawnTable_;
-        Move killerMoves_[KILLER_MAX_PLY][2];
         Move bestMoveCurrentIteration_;
         int bestScoreCurrentIteration_;
         SearchStats searchStats_;
+        bool depthPreferred_;
 };
 
 // threaded search method
-Move threadedSearch(Board& board, TranspositionTable* transpositionTable_);
+Move threadedSearch(AI& master, Board& board, TranspositionTable* transpositionTable_);

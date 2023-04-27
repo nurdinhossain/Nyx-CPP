@@ -71,15 +71,22 @@ int main()
 	// initialize board
 	Board board = Board(input);
 
+	// initialize master ai
+	AI master = AI(false);
+
 	// initialize transposition table
 	TranspositionTable* tt = new TranspositionTable(256);
 
 	// search
-	Move bestMove = threadedSearch(board, tt);
+	Move bestMove = threadedSearch(master, board, tt);
 
 	// make move and print board
 	board.makeMove(bestMove);
 	board.print();
+	std::cout << board.getFen() << std::endl;
+
+	// clear master search stats
+	master.getSearchStats().clear();
 
 	// delete transposition table
 	delete tt;

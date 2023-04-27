@@ -62,6 +62,18 @@ AI::AI()
 {
     // set the pawn table size
     pawnTable_ = new PawnTable(PAWN_HASH_SIZE);
+
+    // set the depth preferred flag
+    depthPreferred_ = false;
+}
+
+AI::AI(bool depthPreferred)
+{
+    // set the pawn table size
+    pawnTable_ = new PawnTable(PAWN_HASH_SIZE);
+
+    // set the depth preferred flag
+    depthPreferred_ = depthPreferred;
 }
 
 AI::~AI()
@@ -100,7 +112,7 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
     }
 
     // transposition table lookup
-    int ttScore = transpositionTable_->getScore(board.getCurrentHash(), depth, ply, alpha, beta);
+    int ttScore = transpositionTable_->getScore(board.getCurrentHash(), depth, ply, alpha, beta, pvNode);
     Move ttMove = transpositionTable_->getMove(board.getCurrentHash());
     if (ttScore != FAIL_SCORE && ttMove.from != NONE)
     {
@@ -150,7 +162,7 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
      *******************/
 
     // sort moves 
-    scoreMoves(board, transpositionTable_, killerMoves_, moves, numMoves, ply);
+    scoreMoves(board, transpositionTable_, killerMoves_, moves, historyTable_, historyMax_, numMoves, ply);
     sortMoves(moves, numMoves);
 
     if (!friendlyKingInCheck && !pvNode && extensions == 0)
@@ -306,7 +318,7 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
         if (score >= beta)
         {
             // store in transposition table
-            transpositionTable_->store(board.getCurrentHash(), LOWER_BOUND, depth, ply, score, moves[i]);
+            transpositionTable_->store(board.getCurrentHash(), LOWER_BOUND, depth, ply, score, moves[i], depthPreferred_);
 
             // store killer move/update history if quiet move
             if (moves[i].type <= QUEEN_CASTLE && abs(score) != abs(FAIL_SCORE))
@@ -319,6 +331,13 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
                     killerMoves_[ply][1] = firstKiller;
                     killerMoves_[ply][0] = moves[i];
                     searchStats_.killersStored++;
+                }
+
+                // update history
+                historyTable_[board.getNextMove()][moves[i].from][moves[i].to] += depth * depth;
+                if (historyTable_[board.getNextMove()][moves[i].from][moves[i].to] > historyMax_)
+                {
+                    historyMax_ = historyTable_[board.getNextMove()][moves[i].from][moves[i].to];
                 }
             }
 
@@ -342,7 +361,7 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
     }
 
     // store in transposition table
-    transpositionTable_->store(board.getCurrentHash(), flag, depth, ply, alpha, bestMove);
+    transpositionTable_->store(board.getCurrentHash(), flag, depth, ply, alpha, bestMove, depthPreferred_);
 
     // return alpha
     return alpha;
@@ -385,7 +404,7 @@ int AI::quiesce(Board& board, int alpha, int beta)
     board.generateMoves(moves, numMoves, true);
 
     // sort moves
-    scoreMoves(board, NULL, killerMoves_, moves, numMoves, -1);
+    scoreMoves(board, NULL, killerMoves_, moves, historyTable_, historyMax_, numMoves, -1);
     sortMoves(moves, numMoves);
 
     // loop through moves
@@ -437,6 +456,23 @@ int AI::quiesce(Board& board, int alpha, int beta)
     return alpha;
 }
 
+// history table methods
+void AI::ageHistory()
+{
+    for (int i = 0; i < 2; i++)
+    {
+        for (int j = 0; j < 64; j++)
+        {
+            for (int k = 0; k < 64; k++)
+            {
+                historyTable_[i][j][k] /= 2;
+            }
+        }
+    }
+
+    historyMax_ = std::max(historyMax_ / 2, 1);
+}
+
 Move AI::getBestMove(Board& board, TranspositionTable* transpositionTable_, int increment, bool verbose)
 {
     // initialize variables
@@ -444,6 +480,9 @@ Move AI::getBestMove(Board& board, TranspositionTable* transpositionTable_, int 
     int bestScore = 0;
     int depth = 1;
     int alpha = NEG_INF, beta = POS_INF;
+
+    // age history table
+    ageHistory();
 
     // iterative deepening with time
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
@@ -489,10 +528,9 @@ Move AI::getBestMove(Board& board, TranspositionTable* transpositionTable_, int 
 }
 
 // threaded search method
-Move threadedSearch(Board& board, TranspositionTable* transpositionTable_)
+Move threadedSearch(AI& master, Board& board, TranspositionTable* transpositionTable_)
 {
     // declare AIs and threads based on THREADS constant
-    AI master = AI();
     AI* slaves[THREADS];
     Board* boards[THREADS];
     std::thread threads[THREADS];
@@ -500,7 +538,26 @@ Move threadedSearch(Board& board, TranspositionTable* transpositionTable_)
     for (int i = 0; i < THREADS; i++)
     {
         boards[i] = new Board(board.getFen());
-        slaves[i] = new AI();
+        slaves[i] = new AI(true);
+
+        // copy history table and killer moves
+        for (int j = 0; j < 2; j++)
+        {
+            for (int k = 0; k < 64; k++)
+            {
+                for (int l = 0; l < 64; l++)
+                {
+                    slaves[i]->historyTable_[j][k][l] = master.historyTable_[j][k][l];
+                }
+            }
+        }
+        for (int j = 0; j < MAX_DEPTH; j++)
+        {
+            for (int k = 0; k < 2; k++)
+            {
+                slaves[i]->killerMoves_[j][k] = master.killerMoves_[j][k];
+            }
+        }
 
         // start threads
         threads[i] = std::thread(&AI::getBestMove, std::ref(*slaves[i]), std::ref(*boards[i]), transpositionTable_, 1, false);

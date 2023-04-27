@@ -35,9 +35,9 @@ class TranspositionTable
         int correctScoreRead(int score, int ply);
 
         // store/access
-        void store(UInt64 key, Flag flag, int depth, int ply, int score, Move move);
+        void store(UInt64 key, Flag flag, int depth, int ply, int score, Move move, bool depthPreferred);
         Entry* probe(UInt64 key);
-        int getScore(UInt64 key, int depth, int ply, int alpha, int beta);
+        int getScore(UInt64 key, int depth, int ply, int alpha, int beta, bool pvNode);
     private:
         // variables
         int size_;
