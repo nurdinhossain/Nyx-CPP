@@ -52,23 +52,22 @@ struct SearchStats
 class AI
 {
     public:
-        // public fields
-        Move bestMoveCurrentIteration_;
-        int bestScoreCurrentIteration_;
-        SearchStats searchStats_;
-
         // constructor/destructor
         AI();
         ~AI();
 
         // search methods
-        int search(Board& board, TranspositionTable* transpositionTable_, int depth, int ply, int alpha, int beta, bool cut, bool& mainThreadStopped, std::chrono::steady_clock::time_point start);
+        int search(Board& board, TranspositionTable* transpositionTable_, int depth, int ply, int alpha, int beta, bool cut, std::chrono::steady_clock::time_point start);
+        Move getBestMove(Board& board, TranspositionTable* transpositionTable_, bool verbose);
         int quiesce(Board& board, int alpha, int beta);
 
     private:
         // private fields
         PawnTable* pawnTable_;
         Move killerMoves_[KILLER_MAX_PLY][2];
+        Move bestMoveCurrentIteration_;
+        int bestScoreCurrentIteration_;
+        SearchStats searchStats_;
 };
 
 // threaded search method

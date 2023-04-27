@@ -71,14 +71,8 @@ AI::~AI()
 }
 
 // search
-int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth, int ply, int alpha, int beta, bool cut, bool& mainThreadStopped, std::chrono::steady_clock::time_point start)
+int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth, int ply, int alpha, int beta, bool cut, std::chrono::steady_clock::time_point start)
 {
-    // check if main thread stopped
-    if (mainThreadStopped)
-    {
-        return FAIL_SCORE;
-    }
-
     // check for time
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -188,7 +182,7 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
             int R = depth > 6 ? MAX_R : MIN_R;
 
             // search
-            int score = -search(board, transpositionTable_, depth - R - 1, ply + 1, -beta, -beta + 1, !cut, mainThreadStopped, start);
+            int score = -search(board, transpositionTable_, depth - R - 1, ply + 1, -beta, -beta + 1, !cut, start);
 
             // undo null move
             board.unmakeNullMove(ep);
@@ -212,7 +206,7 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
             for (int i = 0; i < std::min(numMoves, MULTI_CUT_M); i++)
             {
                 board.makeMove(moves[i]);
-                int score = -search(board, transpositionTable_, depth-1-MULTI_CUT_R, ply + 1, -beta, -beta + 1, i != 0, mainThreadStopped, start);
+                int score = -search(board, transpositionTable_, depth-1-MULTI_CUT_R, ply + 1, -beta, -beta + 1, i != 0, start);
                 board.unmakeMove(moves[i]);
                 if (score >= beta)
                 {
@@ -232,7 +226,7 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
     if ((ttMove.from == NONE) && depth > MIN_IID_DEPTH)
     {
         // search with reduced depth
-        search(board, transpositionTable_, depth - IID_DR, ply, alpha, beta, cut, mainThreadStopped, start);
+        search(board, transpositionTable_, depth - IID_DR, ply, alpha, beta, cut, start);
 
         // check if the tt entry is now valid
         ttMove = transpositionTable_->getMove(board.getCurrentHash());
@@ -278,7 +272,7 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
         int score;
         if (i == 0)
         {
-            score = -search(board, transpositionTable_, depth - 1, ply + 1, -beta, -alpha, false, mainThreadStopped, start);
+            score = -search(board, transpositionTable_, depth - 1, ply + 1, -beta, -alpha, false, start);
         }
         else
         {
@@ -287,19 +281,19 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
             if (lmrValid(board, moves[i], i, depth) && pruningOk) reduction = lmrReduction(i, depth);
 
             // get score
-            score = -search(board, transpositionTable_, depth - 1 - reduction, ply + 1, -alpha - 1, -alpha, !cut, mainThreadStopped, start);
+            score = -search(board, transpositionTable_, depth - 1 - reduction, ply + 1, -alpha - 1, -alpha, !cut, start);
             searchStats_.lmrReductions++;
 
             // re-search if necessary
             if (score > alpha && reduction > 0)
             {
-                score = -search(board, transpositionTable_, depth - 1, ply + 1, -beta, -alpha, !cut, mainThreadStopped, start);
+                score = -search(board, transpositionTable_, depth - 1, ply + 1, -beta, -alpha, !cut, start);
                 searchStats_.lmrReductions--;
                 searchStats_.reSearches++;
             }
             else if (score > alpha && score < beta)
             {
-                score = -search(board, transpositionTable_, depth - 1, ply + 1, -beta, -alpha, !cut, mainThreadStopped, start);
+                score = -search(board, transpositionTable_, depth - 1, ply + 1, -beta, -alpha, !cut, start);
                 searchStats_.reSearches++;
             }
         }
@@ -442,6 +436,57 @@ int AI::quiesce(Board& board, int alpha, int beta)
     return alpha;
 }
 
+Move AI::getBestMove(Board& board, TranspositionTable* transpositionTable_, bool verbose)
+{
+    // initialize variables
+    Move bestMove = Move();
+    int bestScore = 0;
+    int depth = 1;
+    int alpha = NEG_INF, beta = POS_INF;
+
+    // iterative deepening with time
+    std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+    while (depth <= MAX_DEPTH)
+    {
+        // search
+        search(board, transpositionTable_, depth, 0, alpha, beta, false, start);
+
+        // check for time
+        std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+        std::chrono::duration<double> elapsed = end - start;
+        if (elapsed.count() >= MAX_TIME)
+        {
+            break;
+        }
+
+        // update best move and score if the call was not broken prematurely
+        bestMove = bestMoveCurrentIteration_;
+        bestScore = bestScoreCurrentIteration_; 
+
+        // print info
+        if (verbose)
+        {
+            std::cout << "depth: " << depth;
+            std::cout << ", time: " << elapsed.count();
+            std::cout << ", best move: " << indexToSquare(bestMove.from) << indexToSquare(bestMove.to);
+            std::cout << ", score: " << bestScore / 100.0 << ", ";
+            searchStats_.print();
+        }
+
+        // check for mate
+        if (bestScore >= MATE - MAX_DEPTH || bestScore <= -MATE + MAX_DEPTH)
+        {
+            break;
+        }
+
+        // increment depth
+        depth++; 
+    }
+
+    // return best move
+    return bestMove;
+}
+
 // threaded search method
 Move threadedSearch(Board& board, TranspositionTable* transpositionTable_)
 {
@@ -455,70 +500,21 @@ Move threadedSearch(Board& board, TranspositionTable* transpositionTable_)
     {
         boards[i] = new Board(board.getFen());
         slaves[i] = new AI();
-    }
-
-    // initialize variables
-    Move bestMove = Move();
-    int bestScore = 0;
-    int depth = 1;
-    int alpha = NEG_INF, beta = POS_INF;
-    bool mainThreadStopped;
-
-    // iterative deepening with time
-    std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
-    while (depth <= MAX_DEPTH)
-    {
-        // reset main thread stopped
-        mainThreadStopped = false;
 
         // start threads
-        for (int i = 0; i < THREADS; i++)
-        {
-            threads[i] = std::thread(&AI::search, slaves[i], std::ref(*boards[i]), transpositionTable_, depth, 0, alpha, beta, false, std::ref(mainThreadStopped), start);
-        }
-
-        // main thread
-        master.search(board, transpositionTable_, depth, 0, alpha, beta, false, mainThreadStopped, start);
-
-        // stop threads
-        mainThreadStopped = true;
-
-        // join threads
-        for (int i = 0; i < THREADS; i++)
-        {
-            threads[i].join();
-        }
-
-        // check for time
-        std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-        std::chrono::duration<double> elapsed = end - start;
-        if (elapsed.count() >= MAX_TIME)
-        {
-            break;
-        }
-
-        // update best move and score if the call was not broken prematurely
-        bestMove = master.bestMoveCurrentIteration_;
-        bestScore = master.bestScoreCurrentIteration_; 
-
-        // print info
-        std::cout << "depth: " << depth;
-        std::cout << ", time: " << elapsed.count();
-        std::cout << ", best move: " << indexToSquare(bestMove.from) << indexToSquare(bestMove.to);
-        std::cout << ", score: " << bestScore / 100.0 << ", ";
-        master.searchStats_.print();
-
-        // check for mate
-        if (bestScore >= MATE - MAX_DEPTH || bestScore <= -MATE + MAX_DEPTH)
-        {
-            break;
-        }
-
-        // increment depth
-        depth++; 
+        threads[i] = std::thread(&AI::getBestMove, std::ref(*slaves[i]), std::ref(*boards[i]), transpositionTable_, false);
     }
 
-    // delete dynamic variables
+    // main thread
+    Move bestMove = master.getBestMove(board, transpositionTable_, true);
+
+    // stop threads
+    for (int i = 0; i < THREADS; i++)
+    {
+        threads[i].join();
+    }
+
+    // delete boards and slaves
     for (int i = 0; i < THREADS; i++)
     {
         delete boards[i];
