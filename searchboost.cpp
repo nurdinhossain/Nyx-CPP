@@ -217,13 +217,6 @@ bool nullOk(Board& board, int depth)
         return false;
     }
 
-    // if the board is in the endgame, return false
-    Color color = board.getNextMove();
-    if ( board.getOccupied(color) == (board.getPiece(color, KING) | board.getPiece(color, PAWN)) )
-    {
-        return false;
-    }
-
     return true;
 }
 

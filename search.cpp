@@ -156,6 +156,13 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
      *     EXTENSIONS 
      *******************/
     int extensions = 0;
+    
+    // one-reply 
+    if (numMoves == 1) 
+    {
+        searchStats_.extensions++;
+        extensions++;
+    }
 
     /******************* 
      *     PRUNING 
