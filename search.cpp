@@ -107,11 +107,12 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
 
     // transposition table lookup
     int ttScore = transpositionTable_->getScore(board.getCurrentHash(), depth, ply, alpha, beta);
-    if (ttScore != FAIL_SCORE)
+    Move ttMove = transpositionTable_->getMove(board.getCurrentHash());
+    if (ttScore != FAIL_SCORE && ttMove.from != NONE)
     {
         if (ply == 0)
         {
-            bestMoveCurrentIteration_ = transpositionTable_->getMove(board.getCurrentHash());
+            bestMoveCurrentIteration_ = ttMove;
             bestScoreCurrentIteration_ = ttScore;
         }
 
@@ -228,15 +229,14 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
     /******************************
      * INTERNAL ITERATIVE DEEPENING 
      ******************************/
-    Move ttMove = transpositionTable_->getMove(board.getCurrentHash());
-    if ((ttMove.from == ttMove.to) && depth > MIN_IID_DEPTH)
+    if ((ttMove.from == NONE) && depth > MIN_IID_DEPTH)
     {
         // search with reduced depth
         search(board, transpositionTable_, depth - IID_DR, ply, alpha, beta, cut, mainThreadStopped, start);
 
         // check if the tt entry is now valid
         ttMove = transpositionTable_->getMove(board.getCurrentHash());
-        if (!(ttMove.from == ttMove.to))
+        if (ttMove.from != NONE)
         {
             searchStats_.iidHits++;
         }
@@ -314,7 +314,7 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
             transpositionTable_->store(board.getCurrentHash(), LOWER_BOUND, depth, ply, score, moves[i]);
 
             // store killer move/update history if quiet move
-            if (moves[i].type <= QUEEN_CASTLE)
+            if (moves[i].type <= QUEEN_CASTLE && abs(score) != abs(FAIL_SCORE))
             {
                 Move firstKiller = killerMoves_[ply][0];
 
@@ -474,9 +474,7 @@ Move threadedSearch(Board& board, TranspositionTable* transpositionTable_)
         // start threads
         for (int i = 0; i < THREADS; i++)
         {
-
-            int slaveDepth = 4 * ((double)1 / (1 + std::exp(-i)) - 0.5) + depth;
-            threads[i] = std::thread(&AI::search, slaves[i], std::ref(*boards[i]), transpositionTable_, slaveDepth, 0, alpha, beta, false, std::ref(mainThreadStopped), start);
+            threads[i] = std::thread(&AI::search, slaves[i], std::ref(*boards[i]), transpositionTable_, depth, 0, alpha, beta, false, std::ref(mainThreadStopped), start);
         }
 
         // main thread

@@ -22,3 +22,6 @@ void scoreMoves(Board& board, TranspositionTable* tt, Move killerMoves[][2], Mov
 
 // sort moves based on score
 void sortMoves(Move moves[], int numMoves);
+
+// randomize move order
+void randomizeMoves(Move moves[], int numMoves);

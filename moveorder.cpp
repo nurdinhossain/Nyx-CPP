@@ -117,3 +117,22 @@ void sortMoves(Move moves[], int numMoves)
         sortMoves(moves + i, numMoves - i);
     }
 }
+
+// randomize move order
+void randomizeMoves(Move moves[], int numMoves)
+{
+    // check for no moves
+    if (numMoves == 0)
+    {
+        return;
+    }
+
+    // randomize move order
+    for (int i = 0; i < numMoves; i++)
+    {
+        int j = rand() % numMoves;
+        Move temp = moves[i];
+        moves[i] = moves[j];
+        moves[j] = temp;
+    }
+}

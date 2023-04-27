@@ -44,11 +44,8 @@ void TranspositionTable::clear()
     // clear the table
     for (int i = 0; i < size_; i++)
     {
-        table_[i].key = 0;
-        table_[i].flag = EXACT;
-        table_[i].depth = 0;
-        table_[i].score = 0;
-        table_[i].move = Move();
+        table_[i].smpKey = 0;
+        table_[i].data = 0;
     }
 }
 
@@ -57,14 +54,24 @@ Move TranspositionTable::getMove(UInt64 key)
     // get the entry
     Entry* entry = probe(key);
 
-    // ensure the key matches
-    if (!verifyEntry(key, entry))
+    // get key and data
+    UInt64 smpKey = entry->smpKey;
+    UInt64 data = entry->data;
+
+    // check if the entry is valid
+    if (key != (smpKey ^ data))
     {
         return Move();
     }
 
+    // extract move from data
+    Square to = static_cast<Square>(data & 0x3F);
+    Square from = static_cast<Square>((data >> 6) & 0x3F);
+    MoveType type = static_cast<MoveType>((data >> 12) & 0xF);
+    Move move = {type, from, to};
+
     // return the move
-    return entry->move;
+    return move;
 }
 
 int TranspositionTable::correctScoreStore(int score, int ply)
@@ -99,35 +106,6 @@ int TranspositionTable::correctScoreRead(int score, int ply)
     return score;
 }
 
-bool TranspositionTable::verifyEntry(UInt64 key, Entry* entry)
-{
-    UInt64 entryKey = entry->key;
-
-    // unwrap all the xor'd components
-    Move move = entry->move;
-
-    // move.to
-    entryKey ^= move.to;
-
-    // move.from
-    entryKey ^= ((UInt64)move.from << 6);
-
-    // move.type
-    entryKey ^= ((UInt64)move.type << 12);
-
-    // score
-    entryKey ^= ((UInt64)entry->score << 16);
-
-    // depth
-    entryKey ^= ((UInt64)entry->depth << 34);
-
-    // flag
-    entryKey ^= ((UInt64)entry->flag << 40);
-
-    // check if entryKey matches key
-    return entryKey == key;
-}
-
 // store/access
 Entry* TranspositionTable::probe(UInt64 key)
 {
@@ -150,31 +128,32 @@ void TranspositionTable::store(UInt64 key, Flag flag, int depth, int ply, int sc
     Entry* entry = probe(key);
 
     // store the data in a thread-safe manner
-    UInt64 newKey = key;
+    UInt64 smpKey = key;
+    UInt64 data = 0ULL;
     int correctScore = correctScoreStore(score, ply);
 
     // first hash move
     Square from = move.from, to = move.to;
     MoveType type = move.type;
-    newKey ^= to; 
-    newKey ^= ((UInt64)from << 6);
-    newKey ^= ((UInt64)type << 12);
+    data ^= to; 
+    data ^= ((UInt64)from << 6);
+    data ^= ((UInt64)type << 12);
     
     // then hash score
-    newKey ^= ((UInt64)correctScore << 16);
+    data ^= ((UInt64)(correctScore + POS_INF) << 16); // offset by POS_INF to avoid negative numbers
 
     // then hash depth
-    newKey ^= ((UInt64)depth << 34);
+    data ^= ((UInt64)depth << 34);
 
     // then hash flag
-    newKey ^= ((UInt64)flag << 40);
+    data ^= ((UInt64)flag << 40);
+
+    // xor the data with the key
+    smpKey ^= data;
 
     // store the data
-    entry->key = newKey;
-    entry->flag = flag;
-    entry->depth = depth;
-    entry->score = correctScore;
-    entry->move = move;
+    entry->smpKey = smpKey;
+    entry->data = data;
 }
 
 int TranspositionTable::getScore(UInt64 key, int depth, int ply, int alpha, int beta)
@@ -182,31 +161,40 @@ int TranspositionTable::getScore(UInt64 key, int depth, int ply, int alpha, int 
     // get the entry
     Entry* entry = probe(key);
 
-    // ensure the key matches
-    if (!verifyEntry(key, entry))
+    // get key and data
+    UInt64 smpKey = entry->smpKey;
+    UInt64 data = entry->data;
+
+    // check if the entry is valid
+    if (key != (smpKey ^ data))
     {
         return FAIL_SCORE;
     }
 
+    // get depth, score, and flag
+    int entryDepth = (data >> 34) & 0x3F;
+    int entryScore = (data >> 16) & 0x3FFFF;
+    Flag entryFlag = static_cast<Flag>((data >> 40) & 3);
+
     // if key does match, check if the depth is sufficient
-    if (entry->depth >= depth)
+    if (entryDepth >= depth)
     {
         // get the score
-        int score = correctScoreRead(entry->score, ply);
+        int score = correctScoreRead(entryScore - POS_INF, ply);
 
         // check the flag
-        if (entry->flag == EXACT)
+        if (entryFlag == EXACT)
         {
             return score;
         }
-        else if (entry->flag == UPPER_BOUND)
+        else if (entryFlag == UPPER_BOUND)
         {
             if (score <= alpha)
             {
                 return score;
             }
         }
-        else if (entry->flag == LOWER_BOUND)
+        else if (entryFlag == LOWER_BOUND)
         {
             if (score >= beta)
             {
