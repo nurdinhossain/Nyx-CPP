@@ -14,7 +14,8 @@ PawnTable::PawnTable()
     // initialize array
     table_ = new PawnEntry[size_];
 
-    std::cout << "Pawn table size: " << size_ << std::endl;
+    // clear the table
+    clear();
 }
 
 PawnTable::PawnTable(int mb)
@@ -27,6 +28,9 @@ PawnTable::PawnTable(int mb)
 
     // initialize array
     table_ = new PawnEntry[size_];
+
+    // clear the table
+    clear();
 }
 
 // destructor

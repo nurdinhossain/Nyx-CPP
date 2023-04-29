@@ -133,16 +133,17 @@ bool futile(Board& board, Move move, int moveIndex, int depth, int alpha, int be
         return false;
     }
 
-    // if move is not quiet, return false
-    if (move.type != QUIET)
+    // if move is promotion, return false
+    if (move.type >= KNIGHT_PROMOTION)
     {
         return false;
     }
 
-    // if piece moved is a pawn, return false
+    // if piece moved is a passed pawn, return false
     if (extractPiece(board.getSquareToPiece(move.from)) == PAWN)
     {
-        return false;
+        if (isPassed(board, board.getNextMove(), move.from))
+            return false;
     }
 
     // if alpha or beta is near checkmate, return false
@@ -150,23 +151,18 @@ bool futile(Board& board, Move move, int moveIndex, int depth, int alpha, int be
     {
         return false;
     }
-
+    
     // margin
     int margin = FUTILE_MARGINS[depth];
     
-    // positional gain
-    Color color = board.getNextMove();
-    Piece piece = extractPiece(board.getSquareToPiece(move.from));
-    int fromIndex = getTableIndex(move.from, color), toIndex = getTableIndex(move.to, color);
-    int openingFrom = TABLES[piece-1][0][fromIndex], openingTo = TABLES[piece-1][0][toIndex];
-    int endgameFrom = TABLES[piece-1][1][fromIndex], endgameTo = TABLES[piece-1][1][toIndex];
-    int phase = board.getPhase();
-    int fromScore = (openingFrom * (256 - phase) + endgameFrom * phase) / 256;
-    int toScore = (openingTo * (256 - phase) + endgameTo * phase) / 256;
-    int gain = toScore - fromScore;
+    // capture gain
+    if (move.pieceTaken != EMPTY)
+    {
+        margin += PIECE_VALUES[move.pieceTaken - 1];
+    }
 
     // if move could raise alpha, return false. otherwise, return true
-    if (lazyEvaluate(board) + gain + margin <= alpha)
+    if (lazyEvaluate(board) + margin <= alpha)
     {
         return true;
     }

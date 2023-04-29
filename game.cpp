@@ -87,6 +87,9 @@ Board::Board(std::string fen)
     int mb = (int)log2(HISTORY_SIZE);
     size_ = (mb * 1024 * 1024) / sizeof(int);
     history = new int[size_];
+    for (int i = 0; i < size_; i++) {
+        history[i] = 0;
+    }
 
     // split string into parts by space
     std::string parts[4];

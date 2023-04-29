@@ -1,5 +1,6 @@
 #include "moveorder.h"
 #include "tables.h"
+#include <iostream>
 
 // score moves based on MVV/LVA
 void scoreMoves(Board& board, TranspositionTable* tt, Move killerMoves[][2], Move moves[], int historyTable[2][64][64], int historyMax, int numMoves, int ply) 
@@ -64,7 +65,7 @@ void scoreMoves(Board& board, TranspositionTable* tt, Move killerMoves[][2], Mov
         }
 
         // check for history move
-        moves[i].score += (historyTable[board.getNextMove()][move.from][move.to] / historyMax) * 100;
+        moves[i].score += (int)((historyTable[board.getNextMove()][move.from][move.to] / (double)historyMax) * HISTORY_MULTIPLIER);
 
         // get positional gain from move
         Color color = board.getNextMove();
@@ -75,7 +76,7 @@ void scoreMoves(Board& board, TranspositionTable* tt, Move killerMoves[][2], Mov
         int phase = board.getPhase();
         int fromScore = (openingFrom * (256 - phase) + endgameFrom * phase) / 256;
         int toScore = (openingTo * (256 - phase) + endgameTo * phase) / 256;
-        moves[i].score = toScore - fromScore;
+        moves[i].score += toScore - fromScore;
     }
 }
 

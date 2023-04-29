@@ -174,6 +174,9 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
 
     if (!friendlyKingInCheck && !pvNode && extensions == 0)
     {
+        // reliable eval score
+        int reliableEval = evaluate(board, pawnTable_);
+
         // razoring
         if (razorOk(board, depth, alpha))
         {
@@ -184,11 +187,10 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
         // reverse futility pruning
         if (reverseFutileOk(board, depth, beta))
         {
-            int score = lazyEvaluate(board);
-            if (score - REVERSE_FUTILE_MARGINS[depth] >= beta)
+            if (reliableEval - REVERSE_FUTILE_MARGINS[depth] >= beta)
             {
                 searchStats_.reverseFutilePruned++;
-                return score;
+                return reliableEval;
             }
         }
 
@@ -214,7 +216,7 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
                 depth -= DR;
                 if (depth <= 0)
                 {
-                    return evaluate(board, pawnTable_);
+                    return reliableEval;
                 }
             }
         }
@@ -272,14 +274,14 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
         bool pruningOk = !causesCheck && !friendlyKingInCheck && !pvNode && extensions == 0;
 
         // late move pruning
-        if (lmpOk(board, moves[i], i, depth) && pruningOk)
+        if (lmpOk(board, moves[i], i, depth) && pruningOk && ply > 0)
         {
             searchStats_.lmpPruned++;
             continue;
         }
 
         // futile pruning
-        if (futile(board, moves[i], i, depth, alpha, beta) && pruningOk)
+        if (futile(board, moves[i], i, depth, alpha, beta) && pruningOk && ply > 0)
         {
             searchStats_.futileReductions++;
             continue;

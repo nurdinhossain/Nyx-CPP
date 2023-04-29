@@ -49,6 +49,6 @@ bool lmpOk(Board& board, Move move, int moveIndex, int depth);
 int lmrReduction(int moveIndex, int depth);
 bool futile(Board& board, Move move, int moveIndex, int depth, int alpha, int beta);
 bool razorOk(Board& board, int depth, int alpha);
-bool reverseFutileOk(Board& board, int depth,  int beta);
+bool reverseFutileOk(Board& board, int depth, int beta);
 int see(Board& board, Square initialFrom, Square initialTo);
 bool nullOk(Board& board, int depth);

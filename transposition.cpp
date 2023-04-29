@@ -16,6 +16,9 @@ TranspositionTable::TranspositionTable()
     // initialize array
     table_ = new Entry[size_];
 
+    // clear the table
+    clear();
+
     // print size
     std::cout << "Transposition table size: " << size_ << std::endl;
 }
@@ -30,6 +33,9 @@ TranspositionTable::TranspositionTable(int mb)
 
     // initialize array
     table_ = new Entry[size_];
+
+    // clear the table
+    clear();
 
     // print size
     std::cout << "Transposition table size: " << size_ << std::endl;

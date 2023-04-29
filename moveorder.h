@@ -16,6 +16,7 @@ const int TT_MOVE = 9999999;
 const int PROMO_OFFSET = 999999;
 const int CAPTURE_OFFSET = 99999;
 const int KILLER_VALUE = 10;
+const int HISTORY_MULTIPLIER = 500;
 
 // score moves based on MVV/LVA
 void scoreMoves(Board& board, TranspositionTable* tt, Move killerMoves[][2], Move moves[], int historyTable[2][64][64], int historyMax, int numMoves, int ply);
