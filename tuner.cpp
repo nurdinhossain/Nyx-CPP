@@ -30,6 +30,12 @@ void processFENs(string filename, vector<string>& lines, vector<float>& results)
             line.erase(0, pos + delimiter.length());
         }
         results.push_back(stof(line));
+
+        // print progress
+        if (lines.size() % 10000 == 0)
+        {
+            cout << lines.size() << " lines processed" << endl;
+        }
     } 
 
     // close the file 

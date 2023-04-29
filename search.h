@@ -82,5 +82,8 @@ class AI
         bool depthPreferred_;
 };
 
+// print pv line
+void printPV(Board& board, TranspositionTable* transpositionTable_);
+
 // threaded search method
 Move threadedSearch(AI& master, Board& board, TranspositionTable* transpositionTable_);

@@ -536,6 +536,54 @@ Move AI::getBestMove(Board& board, TranspositionTable* transpositionTable_, int 
     return bestMove;
 }
 
+// print pv line
+void printPV(Board& board, TranspositionTable* transpositionTable_)
+{
+    // create copy of board
+    Board boardCopy = Board(board.getFen());
+
+    // print pv line
+    std::cout << "pv line: ";
+    while (true)
+    {
+        // get entry
+        Entry* entry = transpositionTable_->probe(boardCopy.getCurrentHash());
+
+        // get key and data
+        UInt64 smpKey = entry->smpKey;
+        UInt64 data = entry->data;
+
+        // check if the entry is valid
+        if (boardCopy.getCurrentHash() != (smpKey ^ data))
+        {
+            std::cout << std::endl;
+            return;
+        }
+
+        // extract flag from data
+        Flag entryFlag = static_cast<Flag>((data >> 40) & 3);
+
+        // if flag is not EXACT, return
+        if (entryFlag != EXACT)
+        {
+            std::cout << std::endl;
+            return;
+        }
+
+        // extract move from data
+        Square to = static_cast<Square>(data & 0x3F);
+        Square from = static_cast<Square>((data >> 6) & 0x3F);
+        MoveType type = static_cast<MoveType>((data >> 12) & 0xF);
+
+        // make move
+        Move move = { type, from, to };
+        boardCopy.makeMove(move);
+
+        // print move
+        std::cout << indexToSquare(from) << indexToSquare(to) << " ";
+    }
+}
+
 // threaded search method
 Move threadedSearch(AI& master, Board& board, TranspositionTable* transpositionTable_)
 {
@@ -587,6 +635,10 @@ Move threadedSearch(AI& master, Board& board, TranspositionTable* transpositionT
         delete boards[i];
         delete slaves[i];
     }
+
+    // print PV
+    printPV(board, transpositionTable_);
+    std::cout << std::endl;
 
     // return best move
     return bestMove;
