@@ -33,12 +33,12 @@ int main()
 	{
 		std::vector<std::string> fens = processGame(games[i]);
 
-		// remove first 5 fens and last fen
 		if (fens.size() > 6)
 		{
+			// remove first 5 fens and last fen
 			fens.erase(fens.begin(), fens.begin() + 5);
 			fens.pop_back();
-
+	
 			for (int k = 0; k < fens.size(); k++)
 			{
 				file << fens[k] << std::endl;
@@ -51,20 +51,27 @@ int main()
 		{
 			std::cout << i << " games processed" << std::endl;
 		}
+
+		// stop at 20000 positions
+		if (total >= 20000)
+		{
+			std::cout << i << " games processed in total" << std::endl;
+			break;
+		}
 	}
 
 	// close file
 	std::cout << total << std::endl;
-	file.close();
+	file.close();*/
 
 	// load parameters
-	loadParameters("parameters.txt");
+	//loadParameters("parameters.txt");
 
 	// tune (0.5 is the best k value)
-	tune("positions.txt", 0.5);*/
+	tune("positions.txt", 0.5);
 
 	// get user input
-	string input;
+	/*string input;
 	cout << "Enter a FEN string: ";
 	getline(cin, input);
 
@@ -89,7 +96,7 @@ int main()
 	master.getSearchStats().clear();
 
 	// delete transposition table
-	delete tt;
+	delete tt;*/
 
 	return 0;
 }

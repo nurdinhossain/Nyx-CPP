@@ -8,7 +8,7 @@
 const int MAX_DEPTH = 64;
 const int MAX_MOVES = 256;
 const int MAX_MOVES_ATTACK = 64;
-const int MAX_TIME = 120;
+const int MAX_TIME = 15;
 const int KILLER_MAX_PLY = 64;
 const int THREADS = 3;
 

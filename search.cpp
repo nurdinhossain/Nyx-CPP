@@ -421,9 +421,16 @@ int AI::quiesce(Board& board, int alpha, int beta)
     {
         if (moves[i].type < KNIGHT_PROMOTION && moves[i].type != EN_PASSANT) // dont prune promos or ep
         {
-            int seeScore = see(board, moves[i].from, moves[i].to);
+            // pre-see pruning
+            Piece fromPiece = extractPiece(board.getSquareToPiece(moves[i].from));
+            if (PIECE_VALUES[moves[i].pieceTaken-1] - PIECE_VALUES[fromPiece-1] >= PIECE_VALUES[KNIGHT-1]) // if the trade is worth more than a minor piece, prune
+            {
+                searchStats_.seePruned++;
+                continue;
+            }
 
             // see pruning
+            int seeScore = see(board, moves[i].from, moves[i].to);
             if (seeScore < 0)
             {
                 searchStats_.seePruned++;

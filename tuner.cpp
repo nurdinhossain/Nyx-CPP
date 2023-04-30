@@ -109,7 +109,7 @@ std::vector<int*> vectorizeParameters()
     vector<int*> parameters;
 
     // add parameters to vector
-    /*for (int piece = 0; piece < 6; piece++)
+    for (int piece = 0; piece < 6; piece++)
     {
         for (int phase = 0; phase < 2; phase++)
         {
@@ -118,7 +118,7 @@ std::vector<int*> vectorizeParameters()
                 parameters.push_back(&TABLES[piece][phase][square]);
             }
         }
-    }*/
+    }
 
     parameters.push_back(&PASSED_PAWN);
     parameters.push_back(&OUTSIDE_PASSED_PAWN);
