@@ -10,7 +10,10 @@ const int MAX_MOVES = 256;
 const int MAX_MOVES_ATTACK = 64;
 const int MAX_TIME = 15;
 const int KILLER_MAX_PLY = 64;
-const int THREADS = 3;
+const int THREADS = 0;
+
+// aspiration window    
+const int ASPIRATION_WINDOW[6] = { 25, 150, 600, 100000 };
 
 // enum for staged move ordering
 enum STAGE
@@ -77,7 +80,6 @@ class AI
         // private fields
         PawnTable* pawnTable_;
         Move bestMoveCurrentIteration_;
-        int bestScoreCurrentIteration_;
         SearchStats searchStats_;
         bool depthPreferred_;
 };
