@@ -50,25 +50,10 @@ void scoreMoves(Board& board, TranspositionTable* tt, Move killerMoves[][2], Mov
             continue;
         }
 
-        // check for killer move
-        if (ply >= 0)
-            {
-            if (move.from == killerMoves[ply][0].from && move.to == killerMoves[ply][0].to && move.type == killerMoves[ply][0].type)
-            {
-                moves[i].score = CAPTURE_OFFSET;
-                continue;
-            }
-            else if (move.from == killerMoves[ply][1].from && move.to == killerMoves[ply][1].to && move.type == killerMoves[ply][1].type)
-            {
-                moves[i].score = CAPTURE_OFFSET - KILLER_VALUE;
-                continue;
-            }
-        }
-
         // check for castle
         if (move.type == KING_CASTLE || move.type == QUEEN_CASTLE)
         {
-            moves[i].score = CAPTURE_OFFSET - KILLER_VALUE * 2;
+            moves[i].score = CAPTURE_OFFSET;
             continue;
         }
 
@@ -83,38 +68,35 @@ void scoreMoves(Board& board, TranspositionTable* tt, Move killerMoves[][2], Mov
 
                 // reward passed pawns
                 if (isPassed(board, color, move.from)) 
-                    moves[i].score += KILLER_VALUE;
+                {
+                    moves[i].score += 1;
                     
-                // reward unstoppable pawns
-                if (isUnstoppable(board, color, move.from))
-                    moves[i].score += KILLER_VALUE; 
+                    // reward unstoppable pawns
+                    if (isUnstoppable(board, color, move.from))
+                        moves[i].score += 1; 
+                }
 
                 continue;
             }
         }
 
-        // check for knights
-        if (board.getSquareToPiece(move.from) == KNIGHT)
-        {
-            // reward knights moving to center
-            if ((1ULL << move.from) & 0x3C3C3C3C0000)
-                moves[i].score += KNIGHT_CENTER;
-
-            // reward knights creating outposts
-            if (isKnightOutpost(board, board.getNextMove(), move.to))
+        // check for killer move
+        if (ply >= 0)
             {
-                moves[i].score +=   OUTPOST;
-
-                // reward knight creating outposts on holes
-                if (isHole(board, board.getNextMove(), move.to))
-                    moves[i].score += OUTPOST_ON_HOLE;
+            if (move.from == killerMoves[ply][0].from && move.to == killerMoves[ply][0].to && move.type == killerMoves[ply][0].type)
+            {
+                moves[i].score = KILLER_OFFSET;
+                continue;
             }
-
-            continue;
+            else if (move.from == killerMoves[ply][1].from && move.to == killerMoves[ply][1].to && move.type == killerMoves[ply][1].type)
+            {
+                moves[i].score = KILLER_OFFSET - 1;
+                continue;
+            }
         }
 
         // check for history move
-        moves[i].score += (int)((historyTable[board.getNextMove()][move.from][move.to] / (double)historyMax) * HISTORY_MULTIPLIER);
+        moves[i].score = (int)((historyTable[board.getNextMove()][move.from][move.to] / (double)historyMax) * HISTORY_MULTIPLIER);
     }
 }
 

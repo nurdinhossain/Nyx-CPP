@@ -15,26 +15,6 @@ int lazyEvaluate(Board& board)
     // ensure endgame score equals opening score for material
     int endgameScore = openingScore;
 
-    // bishop pair
-    if (hasBishopPair(board, WHITE))
-    {
-        openingScore += BISHOP_PAIR;
-        endgameScore += BISHOP_PAIR;
-    }
-    if (hasBishopPair(board, BLACK))
-    {
-        openingScore -= BISHOP_PAIR;
-        endgameScore -= BISHOP_PAIR;
-    }
-
-    // king score
-    int whiteOpeningKingScore = 0, whiteEndgameKingScore = 0;
-    int blackOpeningKingScore = 0, blackEndgameKingScore = 0;
-    kingScore(board, WHITE, whiteOpeningKingScore, whiteEndgameKingScore);
-    kingScore(board, BLACK, blackOpeningKingScore, blackEndgameKingScore);
-    openingScore += whiteOpeningKingScore - blackOpeningKingScore;
-    endgameScore += whiteEndgameKingScore - blackEndgameKingScore;
-
     // piece square tables
     openingScore += board.getStaticEvalOpening();
     endgameScore += board.getStaticEvalEndgame();
