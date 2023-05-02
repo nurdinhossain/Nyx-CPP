@@ -15,14 +15,6 @@ const int THREADS = 3;
 // aspiration window    
 const int ASPIRATION_WINDOW[6] = { 25, 150, 600, 100000 };
 
-// enum for staged move ordering
-enum STAGE
-{
-    HASH_STAGE,
-    LOUD_STAGE,
-    QUIET_STAGE
-};
-
 // struct for gathering statistics about the search
 struct SearchStats
 {
