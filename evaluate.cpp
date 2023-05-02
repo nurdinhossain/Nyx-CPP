@@ -2,6 +2,7 @@
 #include "bitboard.h"
 #include "evalparams.h"
 #include <iostream>
+#include <cmath>
 
 // lazy evaluation
 int lazyEvaluate(Board& board)
@@ -127,26 +128,6 @@ int evaluate(Board& board, PawnTable* pawnTable)
 bool hasBishopPair(Board& board, Color color)
 {
     return board.getPieceCount(color, BISHOP) >= 2;
-}
-
-void bishopMobility(Board& board, Color color, int& openingScore, int& endgameScore)
-{
-    UInt64 bishops = board.getPiece(color, BISHOP);
-    while (bishops)
-    {
-        // get the least significant bit
-        Square square = static_cast<Square>(lsb(bishops));
-
-        // get the mobility of the bishop
-        UInt64 bishopAttack = lookupBishopAttack(square, board.getFullOccupied() ^ (1ULL << square));
-        int mobility = popCount(bishopAttack & SIDES[1-color] & ~board.getFullOccupied()); // moves on enemy side
-
-        // add to score
-        openingScore += BISHOP_MOBILITY * mobility;
-
-        // remove the least significant bit
-        bishops &= bishops - 1;
-    }
 }
 
 // knight
@@ -291,8 +272,8 @@ bool isPassed(Board& board, Color color, Square square)
     UInt64 neighboringFiles = NEIGHBORING_FILES[file];
     UInt64 frontSpan = color == WHITE ? SQUARES_ABOVE_WHITE_PAWNS[rank] : SQUARES_BELOW_BLACK_PAWNS[rank];
 
-    // if pawn is obstructed by ally pawns, it is not passed
-    if (frontSpan & FILE_MASKS[file] & board.getPiece(color, PAWN))
+    // if pawn is obstructed by ANYTHING, return false
+    if (frontSpan & FILE_MASKS[file] & board.getFullOccupied())
     {
         return false;
     }
@@ -300,16 +281,62 @@ bool isPassed(Board& board, Color color, Square square)
     return !(frontSpan & neighboringFiles & board.getPiece(static_cast<Color>(1 - color), PAWN));
 }
 
+bool isUnstoppable(Board& board, Color color, Square square)
+{
+    // assumes we're dealing with a passed pawn
+    if (board.getOccupied(static_cast<Color>(1-color)) == (board.getPiece(static_cast<Color>(1-color), KING) | board.getPiece(static_cast<Color>(1-color), PAWN)))
+    {
+        // if enemy only has king and pawn, use rule of square
+        int pawnRank = square / 8;
+        int promoRank = color == WHITE ? 7 : 0, promoFile = square % 8;
+        int enemyKingSquare = lsb(board.getPiece(static_cast<Color>(1-color), KING));
+        int enemyKingRank = enemyKingSquare / 8, enemyKingFile = enemyKingSquare % 8;
+
+        // use chebyshev distance to determine if pawn is unstoppable
+        int pawnDistance = abs(pawnRank - promoRank);
+        int kingDistance = std::max(abs(enemyKingRank - promoRank), abs(enemyKingFile - promoFile));
+        if (std::min(5, pawnDistance) < kingDistance - (board.getNextMove() == 1 - color))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+bool isCandidate(Board& board, Color color, Square square)
+{
+    // get frontspan
+    int rank = square / 8, file = square % 8;
+    UInt64 frontSpan = color == WHITE ? SQUARES_ABOVE_WHITE_PAWNS[rank] : SQUARES_BELOW_BLACK_PAWNS[rank];
+    frontSpan &= FILE_MASKS[file];
+
+    // if pawn is obstructed by ANYTHING, return false
+    if (frontSpan & board.getFullOccupied())
+    {
+        return false;
+    }
+
+    // iterate through each square in the frontspan: if no square is attacked by more enemy pawns than ally pawns, this pawn is a candidate
+    while (frontSpan)
+    {
+        Square frontSquare = static_cast<Square>(lsb(frontSpan));
+        UInt64 enemyPawnAttacks = PAWN_ATTACKS[color][frontSquare] & board.getPiece(static_cast<Color>(1 - color), PAWN);
+        UInt64 allyPawnAttacks = PAWN_ATTACKS[1 - color][frontSquare] & board.getPiece(color, PAWN);
+        if (popCount(enemyPawnAttacks) > popCount(allyPawnAttacks))
+        {
+            return false;
+        }
+
+        frontSpan &= frontSpan - 1;
+    }
+
+    return true;
+}
+
 bool isProtected(Board& board, Color color, Square square)
 {
     return PAWN_ATTACKS[1 - color][square] & board.getPiece(color, PAWN);
 } 
-
-bool isOutside(Board& board, Color color, Square square)
-{
-    int file = square % 8;
-    return file == 0 || file == 7;
-}
 
 bool isIsolated(Board& board, Color color, Square square)
 {
@@ -347,12 +374,6 @@ bool isBackward(Board& board, Color color, Square square)
     return true;
 }
 
-bool isDoubled(Board& board, Color color, Square square)
-{
-    int file = square % 8;
-    return popCount(FILE_MASKS[file] & board.getPiece(color, PAWN)) > 1;
-}
-
 void pawnScore(Board& board, Color color, int& openingScore, int& endgameScore)
 {
     // loop through all pawns
@@ -361,20 +382,24 @@ void pawnScore(Board& board, Color color, int& openingScore, int& endgameScore)
     {
         Square square = static_cast<Square>(lsb(pawns));
 
-        // check if pawn is protected
-        bool pawnIsProtected = isProtected(board, color, square);
-
         // check if pawn is passed
         if (isPassed(board, color, square))
         {
             openingScore += PASSED_PAWN;
             endgameScore += PASSED_PAWN;
 
-            // check if pawn is outside
-            if (isOutside(board, color, square))
+            // if pawn is unstoppable, add bonus
+            if (isUnstoppable(board, color, square))
             {
-                endgameScore += OUTSIDE_PASSED_PAWN;
+                endgameScore += UNSTOPPABLE_PASSED_PAWN;
             }
+        }
+
+        // check if pawn is candidate
+        else if (isCandidate(board, color, square))
+        {
+            openingScore += CANDIDATE_PASSED_PAWN;
+            endgameScore += CANDIDATE_PASSED_PAWN;
         }
 
         // check if pawn is isolated
@@ -394,14 +419,14 @@ void pawnScore(Board& board, Color color, int& openingScore, int& endgameScore)
 }
 
 // king
-int kingPawnShieldScore(Board& board, Color color, Square square)
+int kingPawnShieldScore(Board& board, UInt64 safetyArea, Color color)
 {
-    return popCount(kingSafetyArea(color, square) & board.getPiece(color, PAWN));
+    return popCount(safetyArea & board.getPiece(color, PAWN));
 }
 
-int kingPawnStormScore(Board& board, Color color, Square square)
+int kingPawnStormScore(Board& board, UInt64 dangerArea, Color color)
 {
-    return popCount(kingDangerArea(color, square) & board.getPiece(static_cast<Color>(1 - color), PAWN));
+    return popCount(dangerArea & board.getPiece(static_cast<Color>(1 - color), PAWN));
 }
 
 UInt64 kingSafetyArea(Color color, Square square)
@@ -449,10 +474,49 @@ void kingScore(Board& board, Color color, int& openingScore, int& endgameScore)
     Square kingIndex = static_cast<Square>(lsb(board.getPiece(color, KING)));
 
     // check for king pawn shield scaled by enemy material
-    openingScore += kingPawnShieldScore(board, color, kingIndex) * PAWN_SHIELD * board.getMaterial(static_cast<Color>(1 - color)) / PAWN_SHIELD_DIVISOR;
+    UInt64 safetyArea = kingSafetyArea(color, kingIndex);
+    openingScore += kingPawnShieldScore(board, safetyArea, color) * PAWN_SHIELD * board.getMaterial(static_cast<Color>(1 - color)) / PAWN_SHIELD_DIVISOR;
 
     // penalty for being stormed by enemy pawns
-    openingScore -= kingPawnStormScore(board, color, kingIndex) * PAWN_STORM * board.getMaterial(static_cast<Color>(1 - color)) / PAWN_STORM_DIVISOR;
+    UInt64 dangerArea = kingDangerArea(color, kingIndex);
+    openingScore -= kingPawnStormScore(board, dangerArea, color) * PAWN_STORM * board.getMaterial(static_cast<Color>(1 - color)) / PAWN_STORM_DIVISOR;
+
+    // check attack units in safety area
+    int attackUnits = 0;
+    safetyArea |= KING_ATTACKS[kingIndex];
+    UInt64 enemyKnights = board.getPiece(static_cast<Color>(1 - color), KNIGHT), enemyBishops = board.getPiece(static_cast<Color>(1 - color), BISHOP), enemyRooks = board.getPiece(static_cast<Color>(1 - color), ROOK), enemyQueens = board.getPiece(static_cast<Color>(1 - color), QUEEN);
+    while (enemyKnights)
+    {
+        Square square = static_cast<Square>(lsb(enemyKnights));
+        attackUnits += popCount(KNIGHT_ATTACKS[square] & safetyArea) * MINOR_ATTACK_UNITS;
+        enemyKnights &= enemyKnights - 1;
+    }
+    while (enemyBishops)
+    {
+        Square square = static_cast<Square>(lsb(enemyBishops));
+        UInt64 attack = lookupBishopAttack(square, board.getFullOccupied() ^ (1ULL << square));
+        attackUnits += popCount(attack & safetyArea) * MINOR_ATTACK_UNITS;
+        enemyBishops &= enemyBishops - 1;
+    }
+    while (enemyRooks)
+    {
+        Square square = static_cast<Square>(lsb(enemyRooks));
+        UInt64 attack = lookupRookAttack(square, board.getFullOccupied() ^ (1ULL << square));
+        attackUnits += popCount(attack & safetyArea) * ROOK_ATTACK_UNITS;
+        if (attack & board.getPiece(color, KING)) attackUnits += ROOK_CHECK_UNITS;
+        enemyRooks &= enemyRooks - 1;
+    }
+    while (enemyQueens)
+    {
+        Square square = static_cast<Square>(lsb(enemyQueens));
+        UInt64 attack = lookupQueenAttack(square, board.getFullOccupied() ^ (1ULL << square));
+        attackUnits += popCount(attack & safetyArea) * QUEEN_ATTACK_UNITS;
+        if (attack & board.getPiece(color, KING)) attackUnits += QUEEN_CHECK_UNITS;
+        enemyQueens &= enemyQueens - 1;
+    }
+    int tableSafetyScore = std::max(0, (int)(SAFETY_VERTICAL_SCALE * (1 / (1 + pow(2, -(attackUnits-SAFETY_HORIZONTAL_SHIFT)/SAFETY_HORIZONTAL_SCALE))) - SAFETY_VERTICAL_SHIFT));
+    openingScore -= tableSafetyScore;
+    endgameScore -= tableSafetyScore;
 
     // check for king on open file
     int file = kingIndex % 8;

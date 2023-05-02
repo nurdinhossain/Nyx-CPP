@@ -109,7 +109,7 @@ std::vector<int*> vectorizeParameters()
     vector<int*> parameters;
 
     // add parameters to vector
-    for (int piece = 0; piece < 6; piece++)
+    /*for (int piece = 0; piece < 6; piece++)
     {
         for (int phase = 0; phase < 2; phase++)
         {
@@ -118,10 +118,11 @@ std::vector<int*> vectorizeParameters()
                 parameters.push_back(&TABLES[piece][phase][square]);
             }
         }
-    }
+    }*/
 
     parameters.push_back(&PASSED_PAWN);
-    parameters.push_back(&OUTSIDE_PASSED_PAWN);
+    parameters.push_back(&UNSTOPPABLE_PASSED_PAWN);
+    parameters.push_back(&CANDIDATE_PASSED_PAWN);
     parameters.push_back(&BACKWARD_PAWN_PENALTY);
     parameters.push_back(&ISOLATED_PAWN_PENALTY);
 
@@ -129,7 +130,6 @@ std::vector<int*> vectorizeParameters()
     parameters.push_back(&KNIGHT_OUTPOST_ON_HOLE);
 
     parameters.push_back(&BISHOP_PAIR);
-    parameters.push_back(&BISHOP_MOBILITY);
 
     parameters.push_back(&ROOK_OPEN_FILE);
 
@@ -138,6 +138,15 @@ std::vector<int*> vectorizeParameters()
     parameters.push_back(&KING_HALF_OPEN_FILE_PENALTY);
     parameters.push_back(&KING_NEXT_TO_OPEN_FILE_PENALTY);
     parameters.push_back(&KING_NEXT_TO_HALF_OPEN_FILE_PENALTY);
+    parameters.push_back(&SAFETY_VERTICAL_SCALE);
+    parameters.push_back(&SAFETY_HORIZONTAL_SCALE);
+    parameters.push_back(&SAFETY_VERTICAL_SHIFT);
+    parameters.push_back(&SAFETY_HORIZONTAL_SHIFT);
+    parameters.push_back(&MINOR_ATTACK_UNITS);
+    parameters.push_back(&ROOK_ATTACK_UNITS);
+    parameters.push_back(&QUEEN_ATTACK_UNITS);
+    parameters.push_back(&ROOK_CHECK_UNITS);
+    parameters.push_back(&QUEEN_CHECK_UNITS);
     parameters.push_back(&PAWN_SHIELD);
     parameters.push_back(&PAWN_STORM);
     parameters.push_back(&PAWN_SHIELD_DIVISOR);

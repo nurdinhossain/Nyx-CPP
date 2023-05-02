@@ -1,5 +1,6 @@
 #include "moveorder.h"
 #include "tables.h"
+#include "evaluate.h"
 #include <iostream>
 
 // score moves based on MVV/LVA
@@ -64,19 +65,56 @@ void scoreMoves(Board& board, TranspositionTable* tt, Move killerMoves[][2], Mov
             }
         }
 
+        // check for castle
+        if (move.type == KING_CASTLE || move.type == QUEEN_CASTLE)
+        {
+            moves[i].score = CAPTURE_OFFSET - KILLER_VALUE * 2;
+            continue;
+        }
+
+        // check for pawn near promotion
+        if (board.getSquareToPiece(move.from) == PAWN)
+        {
+            Color color = board.getNextMove();
+            int rank = move.from / 8;
+            if (color == WHITE && rank > 4 || color == BLACK && rank < 3)
+            {
+                moves[i].score = PAWN_NEAR_PROMO_OFFSET;
+
+                // reward passed pawns
+                if (isPassed(board, color, move.from)) 
+                    moves[i].score += KILLER_VALUE;
+                    
+                // reward unstoppable pawns
+                if (isUnstoppable(board, color, move.from))
+                    moves[i].score += KILLER_VALUE; 
+
+                continue;
+            }
+        }
+
+        // check for knights
+        if (board.getSquareToPiece(move.from) == KNIGHT)
+        {
+            // reward knights moving to center
+            if ((1ULL << move.from) & 0x3C3C3C3C0000)
+                moves[i].score += KNIGHT_CENTER;
+
+            // reward knights creating outposts
+            if (isKnightOutpost(board, board.getNextMove(), move.to))
+            {
+                moves[i].score +=   OUTPOST;
+
+                // reward knight creating outposts on holes
+                if (isHole(board, board.getNextMove(), move.to))
+                    moves[i].score += OUTPOST_ON_HOLE;
+            }
+
+            continue;
+        }
+
         // check for history move
         moves[i].score += (int)((historyTable[board.getNextMove()][move.from][move.to] / (double)historyMax) * HISTORY_MULTIPLIER);
-
-        // get positional gain from move
-        Color color = board.getNextMove();
-        Piece piece = extractPiece(board.getSquareToPiece(move.from));
-        int fromIndex = getTableIndex(move.from, color), toIndex = getTableIndex(move.to, color);
-        int openingFrom = TABLES[piece-1][0][fromIndex], openingTo = TABLES[piece-1][0][toIndex];
-        int endgameFrom = TABLES[piece-1][1][fromIndex], endgameTo = TABLES[piece-1][1][toIndex];
-        int phase = board.getPhase();
-        int fromScore = (openingFrom * (256 - phase) + endgameFrom * phase) / 256;
-        int toScore = (openingTo * (256 - phase) + endgameTo * phase) / 256;
-        moves[i].score += toScore - fromScore;
     }
 }
 

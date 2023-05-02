@@ -23,8 +23,6 @@ class PawnTable
 
         // helpers/getters
         void clear();
-        int getOpeningScore(UInt64 key);
-        int getEndgameScore(UInt64 key);
 
         // store/access
         void store(UInt64 key, int openingScore, int endgameScore);

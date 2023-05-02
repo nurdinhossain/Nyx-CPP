@@ -52,24 +52,6 @@ void PawnTable::clear()
     }
 }
 
-int PawnTable::getOpeningScore(UInt64 key)
-{
-    // probe the table
-    PawnEntry* entry = probe(key);
-
-    // return the score
-    return entry->openingScore;
-}
-
-int PawnTable::getEndgameScore(UInt64 key)
-{
-    // probe the table
-    PawnEntry* entry = probe(key);
-
-    // return the score
-    return entry->endgameScore;
-}
-
 // store/access
 void PawnTable::store(UInt64 key, int openingScore, int endgameScore)
 {

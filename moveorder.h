@@ -15,6 +15,10 @@ const int MVV_LVA[6][6] =
 const int TT_MOVE = 9999999;
 const int PROMO_OFFSET = 999999;
 const int CAPTURE_OFFSET = 99999;
+const int PAWN_NEAR_PROMO_OFFSET = 9999;
+const int KNIGHT_CENTER = 1000;
+const int OUTPOST = 1500;
+const int OUTPOST_ON_HOLE = 500;
 const int KILLER_VALUE = 10;
 const int HISTORY_MULTIPLIER = 500;
 

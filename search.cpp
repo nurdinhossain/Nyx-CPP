@@ -273,14 +273,14 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
         bool pruningOk = !causesCheck && !friendlyKingInCheck && !pvNode && extensions == 0;
 
         // late move pruning
-        if (lmpOk(board, moves[i], i, depth) && pruningOk && ply > 0)
+        if (lmpOk(board, moves[i], i, depth) && pruningOk)
         {
             searchStats_.lmpPruned++;
             continue;
         }
 
         // futile pruning
-        if (futile(board, moves[i], i, depth, alpha, beta) && pruningOk && ply > 0)
+        if (futile(board, moves[i], i, depth, alpha, beta) && pruningOk)
         {
             searchStats_.futileReductions++;
             continue;
@@ -665,10 +665,6 @@ Move threadedSearch(AI& master, Board& board, TranspositionTable* transpositionT
         delete boards[i];
         delete slaves[i];
     }
-
-    // print PV
-    printPV(board, transpositionTable_);
-    std::cout << std::endl;
 
     // return best move
     return bestMove;

@@ -22,7 +22,6 @@ int evaluate(Board& board, PawnTable* pawnTable);
 
 // bishop stuff
 bool hasBishopPair(Board& board, Color color);
-void bishopMobility(Board& board, Color color, int& openingScore, int& endgameScore);
 
 // knight stuff
 bool isHole(Board& board, Color color, Square square);
@@ -37,16 +36,16 @@ void rookScore(Board& board, Color color, int& openingScore, int& endgameScore);
 
 // pawn stuff
 bool isPassed(Board& board, Color color, Square square);
+bool isUnstoppable(Board& board, Color color, Square square);
+bool isCandidate(Board& board, Color color, Square square);
 bool isProtected(Board& board, Color color, Square square);
-bool isOutside(Board& board, Color color, Square square);
 bool isIsolated(Board& board, Color color, Square square);
 bool isBackward(Board& board, Color color, Square square);
-bool isDoubled(Board& board, Color color, Square square);
 void pawnScore(Board& board, Color color, int& openingScore, int& endgameScore);
 
 // king stuff
 UInt64 kingSafetyArea(Color color, Square square);
 UInt64 kingDangerArea(Color color, Square square);
-int kingPawnShieldScore(Board& board, Color color, Square square);
-int kingPawnStormScore(Board& board, Color color, Square square);
+int kingPawnShieldScore(Board& board, UInt64 safetyArea, Color color);
+int kingPawnStormScore(Board& board, UInt64 dangerArea, Color color);
 void kingScore(Board& board, Color color, int& openingScore, int& endgameScore);
