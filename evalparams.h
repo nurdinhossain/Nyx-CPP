@@ -46,3 +46,6 @@ extern int PAWN_SHIELD;
 extern int PAWN_STORM;
 extern int PAWN_SHIELD_DIVISOR;
 extern int PAWN_STORM_DIVISOR;
+
+// other values
+extern int TEMPO_BONUS;

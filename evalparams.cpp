@@ -46,3 +46,6 @@ int PAWN_SHIELD = 2;
 int PAWN_STORM = 6;
 int PAWN_SHIELD_DIVISOR = 2000;
 int PAWN_STORM_DIVISOR = 1998;
+
+// other values
+int TEMPO_BONUS = 25;

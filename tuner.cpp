@@ -152,6 +152,8 @@ std::vector<int*> vectorizeParameters()
     parameters.push_back(&PAWN_SHIELD_DIVISOR);
     parameters.push_back(&PAWN_STORM_DIVISOR);
 
+    parameters.push_back(&TEMPO_BONUS);
+
     return parameters;
 }   
 
