@@ -12,9 +12,6 @@ const int MAX_TIME = 120;
 const int KILLER_MAX_PLY = 64;
 const int THREADS = 0;
 
-// aspiration window    
-const int ASPIRATION_WINDOW[6] = { 25, 150, 600, 100000 };
-
 // struct for gathering statistics about the search
 struct SearchStats
 {
