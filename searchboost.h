@@ -12,17 +12,17 @@ const int LMP_MAX_DEPTH = 3;
 const int LMP_MAX_MOVES[] = { 0, 7, 15, 25 };
 
 // Futility pruning
-const int FUTILE_MAX_DEPTH = 2;
-const int FUTILE_MARGINS[] = { 0, 125, 250 };
+const int FUTILE_MAX_DEPTH = 3;
+const int FUTILE_MARGINS[] = { 0, 125, 250, 500 };
 const int FUTILE_MARGIN_Q = 100;
 
 // Razoring
-const int RAZOR_MARGIN = 70;
+const int RAZOR_MARGIN = 90;
 const int RAZOR_DEPTH = 3;
 
 // Reverse futility pruning
-const int REVERSE_FUTILE_MAX_DEPTH = 2;
-const int REVERSE_FUTILE_MARGINS[] = { 0, 250, 450 };
+const int REVERSE_FUTILE_MAX_DEPTH = 3;
+const int REVERSE_FUTILE_MARGINS[] = { 0, 250, 450, 700 };
 
 // Null move pruning
 const int MAX_R = 4;

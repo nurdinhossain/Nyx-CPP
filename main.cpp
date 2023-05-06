@@ -65,7 +65,7 @@ int main()
 	file.close();*/
 
 	// load parameters
-	loadParameters("parameters.txt");
+	//loadParameters("parameters.txt");
 
 	// tune (0.5 is the best k value)
 	//tune("positions.txt", 0.5);

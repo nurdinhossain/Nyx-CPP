@@ -21,22 +21,13 @@ extern int ISOLATED_PAWN_PENALTY;
 extern int KNIGHT_OUTPOST;
 extern int KNIGHT_OUTPOST_ON_HOLE;
 
-// bishop values
-extern int BISHOP_PAIR;
-
 // rook values
 extern int ROOK_OPEN_FILE;
 
 // king values
 extern int KING_BLOCK_ROOK_PENALTY;
 extern int KING_OPEN_FILE_PENALTY;
-extern int KING_HALF_OPEN_FILE_PENALTY;
-extern int KING_NEXT_TO_OPEN_FILE_PENALTY;
-extern int KING_NEXT_TO_HALF_OPEN_FILE_PENALTY;
-extern int SAFETY_VERTICAL_SCALE;
-extern int SAFETY_HORIZONTAL_SCALE;
-extern int SAFETY_VERTICAL_SHIFT;
-extern int SAFETY_HORIZONTAL_SHIFT;
+extern int SAFETY_TABLE_MULTIPLIER;
 extern int MINOR_ATTACK_UNITS;
 extern int ROOK_ATTACK_UNITS;
 extern int QUEEN_ATTACK_UNITS;

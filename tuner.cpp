@@ -129,19 +129,11 @@ std::vector<int*> vectorizeParameters()
     parameters.push_back(&KNIGHT_OUTPOST);
     parameters.push_back(&KNIGHT_OUTPOST_ON_HOLE);
 
-    parameters.push_back(&BISHOP_PAIR);
-
     parameters.push_back(&ROOK_OPEN_FILE);
 
     parameters.push_back(&KING_BLOCK_ROOK_PENALTY);
     parameters.push_back(&KING_OPEN_FILE_PENALTY);
-    parameters.push_back(&KING_HALF_OPEN_FILE_PENALTY);
-    parameters.push_back(&KING_NEXT_TO_OPEN_FILE_PENALTY);
-    parameters.push_back(&KING_NEXT_TO_HALF_OPEN_FILE_PENALTY);
-    parameters.push_back(&SAFETY_VERTICAL_SCALE);
-    parameters.push_back(&SAFETY_HORIZONTAL_SCALE);
-    parameters.push_back(&SAFETY_VERTICAL_SHIFT);
-    parameters.push_back(&SAFETY_HORIZONTAL_SHIFT);
+    parameters.push_back(&SAFETY_TABLE_MULTIPLIER);
     parameters.push_back(&MINOR_ATTACK_UNITS);
     parameters.push_back(&ROOK_ATTACK_UNITS);
     parameters.push_back(&QUEEN_ATTACK_UNITS);

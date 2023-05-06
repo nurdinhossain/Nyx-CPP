@@ -37,18 +37,6 @@ int evaluate(Board& board, PawnTable* pawnTable)
     // ensure endgame score equals opening score for material
     int endgameScore = openingScore;
 
-    // bishop pair
-    if (hasBishopPair(board, WHITE))
-    {
-        openingScore += BISHOP_PAIR;
-        endgameScore += BISHOP_PAIR;
-    }
-    if (hasBishopPair(board, BLACK))
-    {
-        openingScore -= BISHOP_PAIR;
-        endgameScore -= BISHOP_PAIR;
-    }
-
     // knight outpost
     openingScore += knightOutpostScore(board, WHITE) - knightOutpostScore(board, BLACK);
 
@@ -255,8 +243,8 @@ bool isPassed(Board& board, Color color, Square square)
     UInt64 neighboringFiles = NEIGHBORING_FILES[file];
     UInt64 frontSpan = color == WHITE ? SQUARES_ABOVE_WHITE_PAWNS[rank] : SQUARES_BELOW_BLACK_PAWNS[rank];
 
-    // if pawn is obstructed by ANYTHING, return false
-    if (frontSpan & FILE_MASKS[file] & board.getFullOccupied())
+    // if pawn is obstructed by ally pawn, return false
+    if (frontSpan & FILE_MASKS[file] & board.getPiece(color, PAWN))
     {
         return false;
     }
@@ -293,8 +281,8 @@ bool isCandidate(Board& board, Color color, Square square)
     UInt64 frontSpan = color == WHITE ? SQUARES_ABOVE_WHITE_PAWNS[rank] : SQUARES_BELOW_BLACK_PAWNS[rank];
     frontSpan &= FILE_MASKS[file];
 
-    // if pawn is obstructed by ANYTHING, return false
-    if (frontSpan & board.getFullOccupied())
+    // if pawn is obstructed by any pawn, return false
+    if ( frontSpan & (board.getPiece(color, PAWN) | board.getPiece(static_cast<Color>(1 - color), PAWN)) )
     {
         return false;
     }
@@ -497,7 +485,7 @@ void kingScore(Board& board, Color color, int& openingScore, int& endgameScore)
         if (attack & board.getPiece(color, KING)) attackUnits += QUEEN_CHECK_UNITS;
         enemyQueens &= enemyQueens - 1;
     }
-    int tableSafetyScore = std::max(0, (int)(SAFETY_VERTICAL_SCALE * (1 / (1 + pow(2, -(attackUnits-SAFETY_HORIZONTAL_SHIFT)/SAFETY_HORIZONTAL_SCALE))) - SAFETY_VERTICAL_SHIFT));
+    int tableSafetyScore = std::min( (int)(0.01 * SAFETY_TABLE_MULTIPLIER * attackUnits * attackUnits), 500 );
     openingScore -= tableSafetyScore;
     endgameScore -= tableSafetyScore;
 
@@ -506,53 +494,5 @@ void kingScore(Board& board, Color color, int& openingScore, int& endgameScore)
     if (openFile(board, color, file))
     {
         openingScore -= KING_OPEN_FILE_PENALTY;
-    }
-    else if (halfOpenFile(board, color, file))
-    {
-        openingScore -= KING_HALF_OPEN_FILE_PENALTY;
-    }
-
-    // check for king next to open file
-    if (file == 0)
-    {
-        if (openFile(board, color, 1))
-        {
-            openingScore -= KING_NEXT_TO_OPEN_FILE_PENALTY;
-        }
-        else if (halfOpenFile(board, color, 1))
-        {
-            openingScore -= KING_NEXT_TO_HALF_OPEN_FILE_PENALTY;
-        }
-    }
-    else if (file == 7)
-    {
-        if (openFile(board, color, 6))
-        {
-            openingScore -= KING_NEXT_TO_OPEN_FILE_PENALTY;
-        }
-        else if (halfOpenFile(board, color, 6))
-        {
-            openingScore -= KING_NEXT_TO_HALF_OPEN_FILE_PENALTY;
-        }
-    }
-    else
-    {
-        if (openFile(board, color, file - 1))
-        {
-            openingScore -= KING_NEXT_TO_OPEN_FILE_PENALTY;
-        }
-        else if (halfOpenFile(board, color, file - 1))
-        {
-            openingScore -= KING_NEXT_TO_HALF_OPEN_FILE_PENALTY;
-        }
-
-        if (openFile(board, color, file + 1))
-        {
-            openingScore -= KING_NEXT_TO_OPEN_FILE_PENALTY;
-        }
-        else if (halfOpenFile(board, color, file + 1))
-        {
-            openingScore -= KING_NEXT_TO_HALF_OPEN_FILE_PENALTY;
-        }
     }
 }
