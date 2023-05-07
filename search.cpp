@@ -592,7 +592,7 @@ Move threadedSearch(AI& master, Board& board, TranspositionTable* transpositionT
     for (int i = 0; i < THREADS; i++)
     {
         boards[i] = new Board(board.getFen());
-        slaves[i] = new AI(true);
+        slaves[i] = new AI(false);
 
         // copy history table and killer moves
         for (int j = 0; j < 2; j++)

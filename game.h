@@ -150,7 +150,7 @@ class Board
         UInt64 queenAttackBoard(Square square) const;
         UInt64 kingAttackBoard(Square square) const;
         void moveGenerationSetup();
-        void generateMoves(Move moves[], int& moveCount, bool attackOnly = false, bool includeChecksWithAttacks = false, bool quietOnly = false);
+        void generateMoves(Move moves[], int& moveCount, bool attackOnly = false);
         bool isEPLegal(Square from, Square to);
         bool isKingMoveLegal(Square from, Square to);
         void makeQuietMove(Square from, Square to);

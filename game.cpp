@@ -640,7 +640,7 @@ void Board::moveGenerationSetup()
     else pinnedPiecesMG = pinned(bishopAttackFromKing, rookAttackFromKing);
 }
 
-void Board::generateMoves(Move moves[], int& moveCount, bool attackOnly, bool includeChecksWithAttacks, bool quietOnly) 
+void Board::generateMoves(Move moves[], int& moveCount, bool attackOnly) 
 {
     /* ASSUMES THAT THE MOVE GENERATION SETUP HAS ALREADY BEEN RUN */
     UInt64 occ = occMG;
@@ -680,8 +680,7 @@ void Board::generateMoves(Move moves[], int& moveCount, bool attackOnly, bool in
         }
 
         // bitwise AND with the opposite color's occupancy if we're only looking for attacks
-        bool checkBreak = includeChecksWithAttacks & (checkers != 0);
-        if (attackOnly && !checkBreak)
+        if (attackOnly)
         {
             UInt64 attackOccupancy = occupied[1 - nextMove];
             // if piece board is pawn board, extract promotions along with attacks
@@ -692,20 +691,6 @@ void Board::generateMoves(Move moves[], int& moveCount, bool attackOnly, bool in
             }
 
             moveBoard &= attackOccupancy;
-        }
-
-        // bitwise AND with NOT the opposite color's occupancy if we're only looking for quiet moves
-        if (quietOnly)
-        {
-            UInt64 attackOccupancy = occupied[1 - nextMove];
-            // if piece board is pawn board, DO NOT extract promotions or attacks
-            if (piece == Piece::PAWN)
-            {
-                UInt64 promoMask = RANK_MASKS[7 - nextMove * 7];
-                attackOccupancy |= promoMask;
-            }
-
-            moveBoard &= ~attackOccupancy;
         }
 
         // pinned pieces
@@ -856,7 +841,7 @@ void Board::generateMoves(Move moves[], int& moveCount, bool attackOnly, bool in
     }
 
     // en passant
-    if (enPassant != Square::NONE && !quietOnly)
+    if (enPassant != Square::NONE)
     {
         if (nextMove == Color::WHITE)
         {
