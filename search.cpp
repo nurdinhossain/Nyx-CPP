@@ -391,12 +391,12 @@ int AI::quiesce(Board& board, int alpha, int beta)
     }
 
     // delta pruning
-    int DELTA = PIECE_VALUES[QUEEN - 1];
+    /*int DELTA = PIECE_VALUES[QUEEN - 1];
     if (score + DELTA < alpha)
     {
         searchStats_.deltaPruned++;
         return alpha;
-    }
+    }*/
 
     // update alpha
     if (score > alpha)
@@ -417,7 +417,7 @@ int AI::quiesce(Board& board, int alpha, int beta)
     // loop through moves
     for (int i = 0; i < numMoves; i++)
     {
-        if (moves[i].type < KNIGHT_PROMOTION && moves[i].type != EN_PASSANT) // dont prune promos or ep
+        /*if (moves[i].type < KNIGHT_PROMOTION && moves[i].type != EN_PASSANT) // dont prune promos or ep
         {
             // see pruning
             int seeScore = see(board, moves[i].from, moves[i].to);
@@ -433,7 +433,7 @@ int AI::quiesce(Board& board, int alpha, int beta)
                 searchStats_.futileReductionsQ++;
                 continue;
             }
-        }
+        }*/
 
         // make move
         board.makeMove(moves[i]);

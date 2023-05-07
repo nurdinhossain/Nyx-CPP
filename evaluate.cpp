@@ -376,8 +376,6 @@ void pawnScore(Board& board, Color color, int& openingScore, int& endgameScore)
             bool obstructed = isObstructed(board, color, square);
             if (!obstructed)
             {
-                endgameScore += UNOBSTRUCTED_BONUS;
-
                 // if pawn is unstoppable, add bonus
                 if (isUnstoppable(board, color, square))
                 {
@@ -391,11 +389,6 @@ void pawnScore(Board& board, Color color, int& openingScore, int& endgameScore)
         {
             // unobstructed bonus
             bool obstructed = isObstructed(board, color, square);
-            if (!obstructed)
-            {
-                endgameScore += UNOBSTRUCTED_BONUS;
-            }
-
             endgameScore += CANDIDATE_PASSED_PAWN;
         }
 
@@ -481,20 +474,7 @@ void kingScore(Board& board, Color color, int& openingScore, int& endgameScore)
     // check attack units in safety area
     int attackUnits = 0;
     safetyArea |= KING_ATTACKS[kingIndex];
-    UInt64 enemyKnights = board.getPiece(static_cast<Color>(1 - color), KNIGHT), enemyBishops = board.getPiece(static_cast<Color>(1 - color), BISHOP), enemyRooks = board.getPiece(static_cast<Color>(1 - color), ROOK), enemyQueens = board.getPiece(static_cast<Color>(1 - color), QUEEN);
-    while (enemyKnights)
-    {
-        Square square = static_cast<Square>(lsb(enemyKnights));
-        attackUnits += popCount(KNIGHT_ATTACKS[square] & safetyArea) * MINOR_ATTACK_UNITS;
-        enemyKnights &= enemyKnights - 1;
-    }
-    while (enemyBishops)
-    {
-        Square square = static_cast<Square>(lsb(enemyBishops));
-        UInt64 attack = lookupBishopAttack(square, board.getFullOccupied() ^ (1ULL << square));
-        attackUnits += popCount(attack & safetyArea) * MINOR_ATTACK_UNITS;
-        enemyBishops &= enemyBishops - 1;
-    }
+    UInt64 enemyRooks = board.getPiece(static_cast<Color>(1 - color), ROOK), enemyQueens = board.getPiece(static_cast<Color>(1 - color), QUEEN);
     while (enemyRooks)
     {
         Square square = static_cast<Square>(lsb(enemyRooks));
