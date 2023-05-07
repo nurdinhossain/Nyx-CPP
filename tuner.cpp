@@ -123,6 +123,7 @@ std::vector<int*> vectorizeParameters()
     parameters.push_back(&PASSED_PAWN);
     parameters.push_back(&UNSTOPPABLE_PASSED_PAWN);
     parameters.push_back(&CANDIDATE_PASSED_PAWN);
+    parameters.push_back(&UNOBSTRUCTED_BONUS);
     parameters.push_back(&BACKWARD_PAWN_PENALTY);
     parameters.push_back(&ISOLATED_PAWN_PENALTY);
 
@@ -132,7 +133,6 @@ std::vector<int*> vectorizeParameters()
     parameters.push_back(&ROOK_OPEN_FILE);
 
     parameters.push_back(&KING_BLOCK_ROOK_PENALTY);
-    parameters.push_back(&KING_OPEN_FILE_PENALTY);
     parameters.push_back(&SAFETY_TABLE_MULTIPLIER);
     parameters.push_back(&MINOR_ATTACK_UNITS);
     parameters.push_back(&ROOK_ATTACK_UNITS);

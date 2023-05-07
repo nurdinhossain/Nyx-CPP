@@ -14,6 +14,7 @@ extern const int MATE_BUFFER;
 extern int PASSED_PAWN;
 extern int UNSTOPPABLE_PASSED_PAWN;
 extern int CANDIDATE_PASSED_PAWN;
+extern int UNOBSTRUCTED_BONUS;
 extern int BACKWARD_PAWN_PENALTY;
 extern int ISOLATED_PAWN_PENALTY;
 
@@ -26,7 +27,6 @@ extern int ROOK_OPEN_FILE;
 
 // king values
 extern int KING_BLOCK_ROOK_PENALTY;
-extern int KING_OPEN_FILE_PENALTY;
 extern int SAFETY_TABLE_MULTIPLIER;
 extern int MINOR_ATTACK_UNITS;
 extern int ROOK_ATTACK_UNITS;

@@ -68,10 +68,10 @@ int main()
 	loadParameters("parameters.txt");
 
 	// tune (0.5 is the best k value)
-	//tune("positions.txt", 0.5);
+	tune("positions.txt", 0.5);
 
 	// get user input
-	string input;
+	/*string input;
 	cout << "Enter a FEN string: ";
 	getline(cin, input);
 
@@ -96,7 +96,7 @@ int main()
 	master.getSearchStats().clear();
 
 	// delete transposition table
-	delete tt;
+	delete tt;*/
 
 	return 0;
 }

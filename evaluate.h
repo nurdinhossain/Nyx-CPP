@@ -38,6 +38,7 @@ void rookScore(Board& board, Color color, int& openingScore, int& endgameScore);
 bool isPassed(Board& board, Color color, Square square);
 bool isUnstoppable(Board& board, Color color, Square square);
 bool isCandidate(Board& board, Color color, Square square);
+bool isObstructed(Board& board, Color color, Square square);
 bool isProtected(Board& board, Color color, Square square);
 bool isIsolated(Board& board, Color color, Square square);
 bool isBackward(Board& board, Color color, Square square);

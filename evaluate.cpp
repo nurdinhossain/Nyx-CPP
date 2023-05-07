@@ -251,7 +251,7 @@ bool isPassed(Board& board, Color color, Square square)
 
 bool isUnstoppable(Board& board, Color color, Square square)
 {
-    // assumes we're dealing with a passed pawn
+    // assumes we're dealing with a passed pawn that is unobstructed
     if (board.getOccupied(static_cast<Color>(1-color)) == (board.getPiece(static_cast<Color>(1-color), KING) | board.getPiece(static_cast<Color>(1-color), PAWN)))
     {
         // if enemy only has king and pawn, use rule of square
@@ -299,6 +299,22 @@ bool isCandidate(Board& board, Color color, Square square)
     }
 
     return true;
+}
+
+bool isObstructed(Board& board, Color color, Square square)
+{
+    // get frontspan
+    int rank = square / 8, file = square % 8;
+    UInt64 frontSpan = color == WHITE ? SQUARES_ABOVE_WHITE_PAWNS[rank] : SQUARES_BELOW_BLACK_PAWNS[rank];
+    frontSpan &= FILE_MASKS[file];
+
+    // if pawn is obstructed by any piece, return true
+    if ( frontSpan & board.getFullOccupied() )
+    {
+        return true;
+    }
+
+    return false;
 }
 
 bool isProtected(Board& board, Color color, Square square)
@@ -356,17 +372,30 @@ void pawnScore(Board& board, Color color, int& openingScore, int& endgameScore)
             openingScore += PASSED_PAWN;
             endgameScore += PASSED_PAWN;
 
-            // if pawn is unstoppable, add bonus
-            if (isUnstoppable(board, color, square))
+            // unobstructed bonus
+            bool obstructed = isObstructed(board, color, square);
+            if (!obstructed)
             {
-                endgameScore += UNSTOPPABLE_PASSED_PAWN;
+                endgameScore += UNOBSTRUCTED_BONUS;
+
+                // if pawn is unstoppable, add bonus
+                if (isUnstoppable(board, color, square))
+                {
+                    endgameScore += UNSTOPPABLE_PASSED_PAWN;
+                }
             }
         }
 
         // check if pawn is candidate
         else if (isCandidate(board, color, square))
         {
-            openingScore += CANDIDATE_PASSED_PAWN;
+            // unobstructed bonus
+            bool obstructed = isObstructed(board, color, square);
+            if (!obstructed)
+            {
+                endgameScore += UNOBSTRUCTED_BONUS;
+            }
+
             endgameScore += CANDIDATE_PASSED_PAWN;
         }
 
@@ -485,11 +514,4 @@ void kingScore(Board& board, Color color, int& openingScore, int& endgameScore)
     int tableSafetyScore = std::min( (int)(0.01 * SAFETY_TABLE_MULTIPLIER * attackUnits * attackUnits), 500 );
     openingScore -= tableSafetyScore;
     endgameScore -= tableSafetyScore;
-
-    // check for king on open file
-    int file = kingIndex % 8;
-    if (openFile(board, color, file))
-    {
-        openingScore -= KING_OPEN_FILE_PENALTY;
-    }
 }
