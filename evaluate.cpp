@@ -85,9 +85,6 @@ int evaluate(Board& board, PawnTable* pawnTable)
     openingScore += board.getStaticEvalOpening();
     endgameScore += board.getStaticEvalEndgame();
 
-    // tempo bonus
-    openingScore += TEMPO_BONUS * (board.getNextMove() == WHITE ? 1 : -1);
-
     // interpolate between opening and endgame
     int score = (openingScore * (256 - phase) + endgameScore * phase) / 256;
 
