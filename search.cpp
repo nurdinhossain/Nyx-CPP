@@ -391,12 +391,12 @@ int AI::quiesce(Board& board, int alpha, int beta)
     }
 
     // delta pruning
-    /*int DELTA = PIECE_VALUES[QUEEN - 1];
+    int DELTA = PIECE_VALUES[QUEEN - 1];
     if (score + DELTA < alpha)
     {
         searchStats_.deltaPruned++;
         return alpha;
-    }*/
+    }
 
     // update alpha
     if (score > alpha)
@@ -417,7 +417,7 @@ int AI::quiesce(Board& board, int alpha, int beta)
     // loop through moves
     for (int i = 0; i < numMoves; i++)
     {
-        /*if (moves[i].type < KNIGHT_PROMOTION && moves[i].type != EN_PASSANT) // dont prune promos or ep
+        if (moves[i].type < KNIGHT_PROMOTION && moves[i].type != EN_PASSANT) // dont prune promos or ep
         {
             // see pruning
             int seeScore = see(board, moves[i].from, moves[i].to);
@@ -433,7 +433,7 @@ int AI::quiesce(Board& board, int alpha, int beta)
                 searchStats_.futileReductionsQ++;
                 continue;
             }
-        }*/
+        }
 
         // make move
         board.makeMove(moves[i]);
@@ -486,6 +486,7 @@ Move AI::getBestMove(Board& board, TranspositionTable* transpositionTable_, int 
     int bestScore = 0;
     int depth = 1;
     int alpha = NEG_INF, beta = POS_INF;
+    int windowAlpha = 0, windowBeta = 0;
 
     // age history table
     ageHistory();
@@ -505,9 +506,33 @@ Move AI::getBestMove(Board& board, TranspositionTable* transpositionTable_, int 
             break;
         }
 
-        // update best move and score if the call was not broken prematurely
-        bestMove = bestMoveCurrentIteration_;
-        bestScore = eval;
+        // check if aspiration window was broken
+        if (eval <= alpha)
+        {
+            windowAlpha += 1;
+            alpha = bestScore - ASPIRATION_WINDOW[windowAlpha];
+            searchStats_.reSearches++;
+            continue;
+        }
+        else if (eval >= beta)
+        {
+            windowBeta += 1;
+            beta = bestScore + ASPIRATION_WINDOW[windowBeta];
+            searchStats_.reSearches++;
+            continue;
+        }
+        else
+        {
+            // reset window
+            windowAlpha = 0;
+            windowBeta = 0;
+
+            // update best move and score if the call was not broken prematurely and reset alpha and beta
+            bestMove = bestMoveCurrentIteration_;
+            bestScore = eval;
+            alpha = bestScore - ASPIRATION_WINDOW[windowAlpha];
+            beta = bestScore + ASPIRATION_WINDOW[windowBeta];
+        }
 
         // print info
         if (verbose)

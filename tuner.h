@@ -15,6 +15,9 @@ void findBestK(string filename, float start, float end, float step);
 // vectorize parameters
 vector<int*> vectorizeParameters();
 
+// vectorize second half of first half of tables
+vector<int*> vectorizeTablesSecondHalf();
+
 // load in parameters from file
 void loadParameters(string filename);
 
@@ -26,3 +29,6 @@ vector<int> getParametersFromPointers(vector<int*> pointers);
 
 // texel tuning
 void tune(string filename, float k);
+
+// save parameters to file
+void saveParameters(string filename, vector<int*> parameters);

@@ -109,16 +109,19 @@ std::vector<int*> vectorizeParameters()
     vector<int*> parameters;
 
     // add parameters to vector
-    /*for (int piece = 0; piece < 6; piece++)
+    for (int piece = 0; piece < 3; piece++)
     {
         for (int phase = 0; phase < 2; phase++)
         {
-            for (int square = 0; square < 64; square++)
+            for (int row = 0; row < 8; row++)
             {
-                parameters.push_back(&TABLES[piece][phase][square]);
+                for (int col = 0; col < 4; col++)
+                {
+                    parameters.push_back(&TABLES[piece][phase][row * 8 + col]);
+                }
             }
         }
-    }*/
+    }
 
     parameters.push_back(&PASSED_PAWN);
     parameters.push_back(&UNSTOPPABLE_PASSED_PAWN);
@@ -147,12 +150,37 @@ std::vector<int*> vectorizeParameters()
     return parameters;
 }   
 
+// vectorize second half of first half of tables
+vector<int*> vectorizeTablesSecondHalf()
+{
+    // initialize vector of parameters
+    vector<int*> parameters;
+
+    // add parameters to vector
+    for (int piece = 0; piece < 3; piece++)
+    {
+        for (int phase = 0; phase < 2; phase++)
+        {
+            for (int row = 0; row < 8; row++)
+            {
+                for (int col = 7; col >= 4; col--)
+                {
+                    parameters.push_back(&TABLES[piece][phase][row * 8 + col]);
+                }
+            }
+        }
+    }
+
+    return parameters;
+}
+
 void loadParameters(string filename)
 {
     ifstream file(filename);
     string line;
     int i = 0;
     vector<int*> parameters = vectorizeParameters();
+    vector<int*> secondHalf = vectorizeTablesSecondHalf();
 
     // split comma-separated values
     while (getline(file, line))
@@ -164,11 +192,25 @@ void loadParameters(string filename)
         {
             // get token
             token = line.substr(0, pos);
-            *parameters[i] = stoi(token);
+            int param = stoi(token);
+            *parameters[i] = param;
+
+            // second half
+            if (i < secondHalf.size())
+                *secondHalf[i] = param;
+
             line.erase(0, pos + delimiter.length());
             i++;
         }
-        *parameters[i] = stoi(line);
+
+        // get last token
+        int param = stoi(line);
+
+        // second half
+        if (i < secondHalf.size())
+            *secondHalf[i] = param;
+
+        *parameters[i] = param;
         i++;
     }
 }
@@ -225,14 +267,20 @@ void tune(string filename, float k)
 
             // increase parameter
             *parameter = originalParameter + 1;
+            saveParameters("parameters.txt", parameters);
+            loadParameters("parameters.txt");
             float increasedMSE = mse(lines, results, k);
 
             // decrease parameter
             *parameter = originalParameter - 1;
+            saveParameters("parameters.txt", parameters);
+            loadParameters("parameters.txt");
             float decreasedMSE = mse(lines, results, k);
 
             // reset parameter
             *parameter = originalParameter;
+            saveParameters("parameters.txt", parameters);
+            loadParameters("parameters.txt");
 
             // update parameter if improved
             if (increasedMSE < bestMSE && decreasedMSE < bestMSE)
@@ -246,20 +294,26 @@ void tune(string filename, float k)
                     *parameter = originalParameter - 1;
                 }
                 improved = true;
+                saveParameters("parameters.txt", parameters);
             }
             else if (increasedMSE < bestMSE)
             {
                 *parameter = originalParameter + 1;
                 improved = true;
+                saveParameters("parameters.txt", parameters);
             }
             else if (decreasedMSE < bestMSE)
             {
                 *parameter = originalParameter - 1;
                 improved = true;
+                saveParameters("parameters.txt", parameters);
             }
 
             // update best mse
             bestMSE = min(bestMSE, min(increasedMSE, decreasedMSE));
+
+            // load parameters
+            loadParameters("parameters.txt");
 
             // print parameter and mses
             cout << "Parameter: " << i << endl;
@@ -267,19 +321,21 @@ void tune(string filename, float k)
             cout << "Increased MSE: " << increasedMSE << endl;
             cout << "Decreased MSE: " << decreasedMSE << endl;
         }
-
-        // save parameters every iteration
-        ofstream outputFile;
-        outputFile.open("parameters.txt");
-        vector<int> bestParameters = getParametersFromPointers(parameters);
-        for (int i = 0; i < bestParameters.size(); i++)
-        {
-            outputFile << bestParameters[i];
-            if (i != bestParameters.size() - 1)
-            {
-                outputFile << ",";
-            }
-        }
-        outputFile.close();
     }
+}
+
+// save parameters to file
+void saveParameters(string filename, vector<int*> parameters)
+{
+    ofstream outputFile;
+    outputFile.open(filename);
+    for (int i = 0; i < parameters.size(); i++)
+    {
+        outputFile << *parameters[i];
+        if (i != parameters.size() - 1)
+        {
+            outputFile << ",";
+        }
+    }
+    outputFile.close();
 }
