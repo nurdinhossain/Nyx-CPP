@@ -2,11 +2,14 @@
 #include <chrono>
 #include <thread>
 #include <cmath>
+#include "client.h"
 #include "search.h"
 #include "evaluate.h"
 #include "moveorder.h"
 #include "searchboost.h"
 #include "evalparams.h"
+
+int MAX_TIME = 10;
 
 // implement struct member functions
 void SearchStats::print()
@@ -391,12 +394,12 @@ int AI::quiesce(Board& board, int alpha, int beta)
     }
 
     // delta pruning
-    /*int DELTA = PIECE_VALUES[QUEEN - 1];
+    int DELTA = PIECE_VALUES[QUEEN - 1];
     if (score + DELTA < alpha)
     {
         searchStats_.deltaPruned++;
         return alpha;
-    }*/
+    }
 
     // update alpha
     if (score > alpha)
@@ -417,7 +420,7 @@ int AI::quiesce(Board& board, int alpha, int beta)
     // loop through moves
     for (int i = 0; i < numMoves; i++)
     {
-        /*if (moves[i].type < KNIGHT_PROMOTION && moves[i].type != EN_PASSANT) // dont prune promos or ep
+        if (moves[i].type < KNIGHT_PROMOTION && moves[i].type != EN_PASSANT) // dont prune promos or ep
         {
             // see pruning
             int seeScore = see(board, moves[i].from, moves[i].to);
@@ -433,7 +436,7 @@ int AI::quiesce(Board& board, int alpha, int beta)
                 searchStats_.futileReductionsQ++;
                 continue;
             }
-        }*/
+        }
 
         // make move
         board.makeMove(moves[i]);
@@ -479,7 +482,7 @@ void AI::ageHistory()
     historyMax_ = std::max(historyMax_ / 2, 1);
 }
 
-Move AI::getBestMove(Board& board, TranspositionTable* transpositionTable_, int increment, bool verbose)
+Move AI::getBestMove(Board& board, TranspositionTable* transpositionTable_, int increment, bool verbose, int socket)
 {
     // initialize variables
     Move bestMove = Move();
@@ -542,6 +545,18 @@ Move AI::getBestMove(Board& board, TranspositionTable* transpositionTable_, int 
             std::cout << ", best move: " << indexToSquare(bestMove.from) << indexToSquare(bestMove.to);
             std::cout << ", score: " << bestScore / 100.0 << ", ";
             searchStats_.print();
+
+            // send info to gui
+            if (socket != -1)
+            {
+                std::string stringMove = indexToSquare(bestMove.from) + indexToSquare(bestMove.to);
+                if (bestMove.type == KNIGHT_PROMOTION || bestMove.type == KNIGHT_PROMOTION_CAPTURE) stringMove += "n";
+                else if (bestMove.type == BISHOP_PROMOTION || bestMove.type == BISHOP_PROMOTION_CAPTURE) stringMove += "b";
+                else if (bestMove.type == ROOK_PROMOTION || bestMove.type == ROOK_PROMOTION_CAPTURE) stringMove += "r";
+                else if (bestMove.type == QUEEN_PROMOTION || bestMove.type == QUEEN_PROMOTION_CAPTURE) stringMove += "q";
+                std::string info = "info depth " + std::to_string(depth) + " score cp " + std::to_string(bestScore) + " pv " + stringMove + "\n";
+                sendMessage(socket, info);
+            }
         }
 
         // check for mate
@@ -607,7 +622,7 @@ void printPV(Board& board, TranspositionTable* transpositionTable_)
 }
 
 // threaded search method
-Move threadedSearch(AI& master, Board& board, TranspositionTable* transpositionTable_)
+Move threadedSearch(AI& master, Board& board, TranspositionTable* transpositionTable_, int socket)
 {
     // declare AIs and threads based on THREADS constant
     AI* slaves[THREADS];
@@ -639,11 +654,11 @@ Move threadedSearch(AI& master, Board& board, TranspositionTable* transpositionT
         }
 
         // start threads
-        threads[i] = std::thread(&AI::getBestMove, std::ref(*slaves[i]), std::ref(*boards[i]), transpositionTable_, 1, false);
+        threads[i] = std::thread(&AI::getBestMove, std::ref(*slaves[i]), std::ref(*boards[i]), transpositionTable_, 1, false, socket);
     }
 
     // main thread
-    Move bestMove = master.getBestMove(board, transpositionTable_, 1, true);
+    Move bestMove = master.getBestMove(board, transpositionTable_, 1, true, socket);
 
     // stop threads
     for (int i = 0; i < THREADS; i++)
@@ -657,6 +672,8 @@ Move threadedSearch(AI& master, Board& board, TranspositionTable* transpositionT
         delete boards[i];
         delete slaves[i];
     }
+
+    std::cout << "search finished" << std::endl;
 
     // return best move
     return bestMove;

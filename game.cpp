@@ -1075,7 +1075,7 @@ void Board::makeMove(Move &move)
     currentHash ^= ZOBRIST_SIDE;
 
     // update history
-    history[currentHash % size_];
+    history[currentHash % size_]++;
 }
 
 void Board::unmakeMove(Move &move)

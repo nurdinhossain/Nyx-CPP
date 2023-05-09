@@ -72,8 +72,12 @@ void scoreMoves(Board& board, TranspositionTable* tt, Move killerMoves[][2], Mov
                     moves[i].score += 1;
                     
                     // reward unstoppable pawns
-                    if (isUnstoppable(board, color, move.from))
-                        moves[i].score += 1; 
+                    if (!isObstructed(board, color, move.from))
+                    {
+                        moves[i].score += 1;
+                        if (isUnstoppable(board, color, move.from))
+                            moves[i].score += 1; 
+                    }
                 }
 
                 continue;
