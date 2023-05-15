@@ -47,19 +47,23 @@ void PawnTable::clear()
     for (int i = 0; i < size_; i++)
     {
         table_[i].key = 0;
+        table_[i].whiteAttacks = 0;
+        table_[i].blackAttacks = 0;
         table_[i].openingScore = 0;
         table_[i].endgameScore = 0;
     }
 }
 
 // store/access
-void PawnTable::store(UInt64 key, int openingScore, int endgameScore)
+void PawnTable::store(UInt64 key, UInt64 whiteAttacks, UInt64 blackAttacks, int openingScore, int endgameScore)
 {
     // probe the table
     PawnEntry* entry = probe(key);
 
     // store the data
     entry->key = key;
+    entry->whiteAttacks = whiteAttacks;
+    entry->blackAttacks = blackAttacks;
     entry->openingScore = openingScore;
     entry->endgameScore = endgameScore;
 }

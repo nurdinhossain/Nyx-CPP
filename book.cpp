@@ -19,12 +19,15 @@ std::vector<std::vector<std::string>> processPGN(std::string filename, int limit
     string line;
     while (getline(file, line))
     {
+        // remove all carriage returns
+        line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
+
         // if line contains a square bracket, forget it
         if (line.find('[') != string::npos)
         {
             continue;
         }
-
+        
         // if line is empty/just contains newline, add copy of game to games and reset current game
         if (line == "" || line == "\n")
         {
@@ -35,7 +38,7 @@ std::vector<std::vector<std::string>> processPGN(std::string filename, int limit
                 gameCount++;
 
                 // if game count is greater than limit, return games
-                if (gameCount > limit)
+                if (gameCount >= limit)
                 {
                     return games;
                 }

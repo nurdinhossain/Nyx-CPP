@@ -78,19 +78,19 @@ enum Phase
 
 struct Move
 {
-    MoveType type{QUIET};
-    Square from{NONE};
-    Square to{NONE};
-    Piece pieceTaken{EMPTY};
-    int oldCastle{0};
-    Square oldEnPassant{NONE};
-    int score{0};
+    MoveType type;
+    Square from;
+    Square to;
+    Piece pieceTaken;
+    int oldCastle;
+    Square oldEnPassant;
+    int score;
 };
 
 constexpr UInt64 FILLED_BOARD = 0xFFFFFFFFFFFFFFFFULL;
 constexpr int PIECE_VALUES[5] = {100, 310, 320, 500, 900};
 
-const int HISTORY_SIZE = 2; // 1 mb = 1 * 1024 * 1024 bytes
+const int HISTORY_SIZE = 64; // 1 mb = 1 * 1024 * 1024 bytes
 
 Color extractColor(int);
 Piece extractPiece(int);

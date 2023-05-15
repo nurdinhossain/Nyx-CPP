@@ -98,6 +98,11 @@ def make_move(driver, move_from, move_to, promotion, color):
     # sleep for 50 ms
     time.sleep(0.05)
         
+def receive_ok(client_socket):
+    # receive ok
+    data = client_socket.recv(MESSAGE_BUFFER_SIZE)
+    while data.decode() != 'ok':
+        data = client_socket.recv(MESSAGE_BUFFER_SIZE)
 
 def main():
     # Create a socket
@@ -147,13 +152,15 @@ def main():
     try:
         while True:
             # await enemy move
+            client_socket.send("ponder".encode())
             enemy_move = await_enemy_move(driver)
+            client_socket.send("stop".encode())
+            receive_ok(client_socket)
             if enemy_move is not None:
                 # send enemy move to client
                 print("Sending enemy move:", enemy_move)
                 client_socket.send(enemy_move.encode())
-                ok_message = client_socket.recv(MESSAGE_BUFFER_SIZE).decode()
-                print(ok_message)
+                receive_ok(client_socket)
             # tell client to search for move
             client_socket.send("start {}L".format(TIME_LIMIT).encode())
 

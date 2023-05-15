@@ -9,7 +9,7 @@
 #include "searchboost.h"
 #include "evalparams.h"
 
-int MAX_TIME = 10;
+int MAX_TIME = 600;
 
 // implement struct member functions
 void SearchStats::print()
@@ -86,12 +86,18 @@ AI::~AI()
 }
 
 // search
-int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth, int ply, int alpha, int beta, bool cut, std::chrono::steady_clock::time_point start)
+int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth, int ply, int alpha, int beta, bool cut, std::chrono::steady_clock::time_point start, std::string& buffer)
 {
     // check for time
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     std::chrono::duration<double> elapsed = end - start;
     if (elapsed.count() >= MAX_TIME)
+    {
+        return FAIL_SCORE;
+    }
+
+    // check for buffer
+    if (buffer == "stop")
     {
         return FAIL_SCORE;
     }
@@ -109,7 +115,7 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
     }
 
     // check for threefold repetition
-    if (ply > 0 && board.getHistory() > 1)
+    if (ply > 0 && board.getHistory() > 2)
     {
         return DRAW;
     }
@@ -206,7 +212,7 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
             int R = depth > 6 ? MAX_R : MIN_R;
 
             // search
-            int score = -search(board, transpositionTable_, depth - R - 1, ply + 1, -beta, -beta + 1, !cut, start);
+            int score = -search(board, transpositionTable_, depth - R - 1, ply + 1, -beta, -beta + 1, !cut, start, buffer);
 
             // undo null move
             board.unmakeNullMove(ep);
@@ -230,7 +236,7 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
             for (int i = 0; i < std::min(numMoves, MULTI_CUT_M); i++)
             {
                 board.makeMove(moves[i]);
-                int score = -search(board, transpositionTable_, depth-1-MULTI_CUT_R, ply + 1, -beta, -beta + 1, i != 0, start);
+                int score = -search(board, transpositionTable_, depth-1-MULTI_CUT_R, ply + 1, -beta, -beta + 1, i != 0, start, buffer);
                 board.unmakeMove(moves[i]);
                 if (score >= beta)
                 {
@@ -250,7 +256,7 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
     if ((ttMove.from == NONE) && depth > MIN_IID_DEPTH)
     {
         // search with reduced depth
-        search(board, transpositionTable_, depth - IID_DR, ply, alpha, beta, cut, start);
+        search(board, transpositionTable_, depth - IID_DR, ply, alpha, beta, cut, start, buffer);
 
         // check if the tt entry is now valid
         ttMove = transpositionTable_->getMove(board.getCurrentHash());
@@ -296,7 +302,7 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
         int score;
         if (i == 0)
         {
-            score = -search(board, transpositionTable_, depth - 1 + extensions, ply + 1, -beta, -alpha, false, start);
+            score = -search(board, transpositionTable_, depth - 1 + extensions, ply + 1, -beta, -alpha, false, start, buffer);
         }
         else
         {
@@ -305,19 +311,19 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
             if (lmrValid(board, moves[i], i, depth) && pruningOk) reduction = lmrReduction(i, depth);
 
             // get score
-            score = -search(board, transpositionTable_, depth - 1 - reduction + extensions, ply + 1, -alpha - 1, -alpha, !cut, start);
+            score = -search(board, transpositionTable_, depth - 1 - reduction + extensions, ply + 1, -alpha - 1, -alpha, !cut, start, buffer);
             searchStats_.lmrReductions++;
 
             // re-search if necessary
             if (score > alpha && reduction > 0)
             {
-                score = -search(board, transpositionTable_, depth - 1 + extensions, ply + 1, -beta, -alpha, !cut, start);
+                score = -search(board, transpositionTable_, depth - 1 + extensions, ply + 1, -beta, -alpha, !cut, start, buffer);
                 searchStats_.lmrReductions--;
                 searchStats_.reSearches++;
             }
             else if (score > alpha && score < beta)
             {
-                score = -search(board, transpositionTable_, depth - 1 + extensions, ply + 1, -beta, -alpha, !cut, start);
+                score = -search(board, transpositionTable_, depth - 1 + extensions, ply + 1, -beta, -alpha, !cut, start, buffer);
                 searchStats_.reSearches++;
             }
         }
@@ -482,14 +488,15 @@ void AI::ageHistory()
     historyMax_ = std::max(historyMax_ / 2, 1);
 }
 
-Move AI::getBestMove(Board& board, TranspositionTable* transpositionTable_, int increment, bool verbose, int socket)
+Move AI::getBestMove(Board& board, TranspositionTable* transpositionTable_, int increment, bool verbose, int socket, std::string& buffer)
 {
     // initialize variables
-    Move bestMove = Move();
+    Move bestMove = {QUIET, NONE, NONE};
     int bestScore = 0;
     int depth = 1;
     int alpha = NEG_INF, beta = POS_INF;
     int windowAlpha = 0, windowBeta = 0;
+    int pvChanges = 0;
 
     // age history table
     ageHistory();
@@ -499,7 +506,13 @@ Move AI::getBestMove(Board& board, TranspositionTable* transpositionTable_, int 
     while (depth <= MAX_DEPTH)
     {
         // search
-        int eval = search(board, transpositionTable_, depth, 0, alpha, beta, false, start);
+        int eval = search(board, transpositionTable_, depth, 0, alpha, beta, false, start, buffer);
+
+        // check for buffer
+        if (buffer == "stop")
+        {
+            break;
+        }
 
         // check for time
         std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
@@ -531,6 +544,11 @@ Move AI::getBestMove(Board& board, TranspositionTable* transpositionTable_, int 
             windowBeta = 0;
 
             // update best move and score if the call was not broken prematurely and reset alpha and beta
+            if (bestMoveCurrentIteration_.from != bestMove.from || bestMoveCurrentIteration_.to != bestMove.to || bestMoveCurrentIteration_.type != bestMove.type)
+            {
+                pvChanges++;
+            }
+
             bestMove = bestMoveCurrentIteration_;
             bestScore = eval;
             alpha = bestScore - ASPIRATION_WINDOW[windowAlpha];
@@ -545,6 +563,13 @@ Move AI::getBestMove(Board& board, TranspositionTable* transpositionTable_, int 
             std::cout << ", best move: " << indexToSquare(bestMove.from) << indexToSquare(bestMove.to);
             std::cout << ", score: " << bestScore / 100.0 << ", ";
             searchStats_.print();
+
+            // adjust time depending on pv changes  
+            if (pvChanges > 1)
+            {
+                MAX_TIME += 1;
+                pvChanges = 0;
+            }
 
             // send info to gui
             if (socket != -1)
@@ -622,7 +647,7 @@ void printPV(Board& board, TranspositionTable* transpositionTable_)
 }
 
 // threaded search method
-Move threadedSearch(AI& master, Board& board, TranspositionTable* transpositionTable_, int socket)
+Move threadedSearch(AI& master, Board& board, TranspositionTable* transpositionTable_, int socket, std::string& buffer)
 {
     // declare AIs and threads based on THREADS constant
     AI* slaves[THREADS];
@@ -654,11 +679,11 @@ Move threadedSearch(AI& master, Board& board, TranspositionTable* transpositionT
         }
 
         // start threads
-        threads[i] = std::thread(&AI::getBestMove, std::ref(*slaves[i]), std::ref(*boards[i]), transpositionTable_, 1, false, socket);
+        threads[i] = std::thread(&AI::getBestMove, std::ref(*slaves[i]), std::ref(*boards[i]), transpositionTable_, 1, false, socket, std::ref(buffer));
     }
 
     // main thread
-    Move bestMove = master.getBestMove(board, transpositionTable_, 1, true, socket);
+    Move bestMove = master.getBestMove(board, transpositionTable_, 1, true, socket, buffer);
 
     // stop threads
     for (int i = 0; i < THREADS; i++)

@@ -71,7 +71,7 @@ Move TranspositionTable::getMove(UInt64 key)
     // check if the entry is valid
     if (key != (smpKey ^ data))
     {
-        return Move();
+        return {QUIET, NONE, NONE};
     }
 
     // extract move from data

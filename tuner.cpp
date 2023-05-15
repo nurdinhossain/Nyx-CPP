@@ -8,7 +8,224 @@
 #include <string>
 #include <vector>
 #include <cmath>
+#include <thread>
 using namespace std;
+
+// Particle class for particle swarm optimization
+Particle::Particle()
+{
+    // initialize position and velocity
+    initialize();
+}
+
+// destructor
+Particle::~Particle()
+{
+    // nothing to do here
+}
+
+// initialize particle
+void Particle::initialize()
+{
+    vector<int*> parameters = vectorizeParameters();
+    
+    // initialize position
+    for (int i = 0; i < parameters.size(); i++)
+    {
+        // set position to parameter value
+        position.push_back(*parameters[i]);
+
+        // set best position to position
+        best_position.push_back(position[i]);
+
+        // get random float value between -2 and 2 (inclusive) for velocity
+        float random = ((float)rand() / RAND_MAX) * 4 - 2;
+        velocity.push_back(random);
+    }
+
+    // set best mse to 1000000
+    best_mse = 1000000;
+}
+
+// update particle
+void Particle::update_velocity(double inertia, double cognitive, double social, vector<float>& global_best_position)
+{
+    // get random values between 0 and 1
+    double r1 = (double) rand() / RAND_MAX;
+    double r2 = (double) rand() / RAND_MAX;
+
+    // update velocity
+    for (int i = 0; i < velocity.size(); i++)
+    {
+        velocity[i] = inertia * velocity[i] + cognitive * r1 * (best_position[i] - position[i]) + social * r2 * (global_best_position[i] - position[i]);
+    }
+}
+
+void Particle::update_position()
+{
+    // update position
+    for (int i = 0; i < position.size(); i++)
+    {
+        position[i] += velocity[i];
+    }
+}
+
+// get position
+vector<float> Particle::getPosition()
+{
+    return position;
+}
+
+// get velocity
+vector<float> Particle::getVelocity()
+{
+    return velocity;
+}
+
+// get best position
+vector<float> Particle::getBestPosition()
+{
+    return best_position;
+}
+
+// get best mse
+double Particle::getBestMSE()
+{
+    return best_mse;
+}
+
+// evaluate particle
+bool Particle::evaluate(vector<string>& lines, vector<float>& results, float k)
+{
+    vector<int> intPosition;
+    for (int i = 0; i < position.size(); i++)
+    {
+        // round and convert to int
+        intPosition.push_back(round(position[i]));
+    }
+
+    saveParameters("parameters.txt", intPosition);
+    loadParameters("parameters.txt");
+
+    // get mse
+    double score = mse(lines, results, k);
+
+    // update best position and best mse
+    if (score < best_mse)
+    {
+        best_position = position;
+        std::cout << "Old best mse: " << best_mse << ", new best mse: " << score << std::endl;
+        best_mse = score;
+
+        return true;
+    }
+
+    return false;
+}
+
+// function for evaluating multiple particles
+void evaluateParticles(vector<Particle>& particles, int startIndex, int numParticles, vector<string>& lines, vector<float>& results, float k, bool& improved, vector<float>& global_best_position, double& global_best_mse)
+{
+    // evaluate particles
+    for (int i = startIndex; i < startIndex + numParticles; i++)
+    {
+        // evaluate particle
+        bool particleImproved = particles[i].evaluate(lines, results, k);
+
+        // update improved
+        if (particleImproved)
+        {
+            improved = true;
+        }
+
+        // get best position and mse
+        vector<float> best_position = particles[i].getBestPosition();
+        double best_mse = particles[i].getBestMSE();
+
+        // update global best position and mse
+        if (best_mse < global_best_mse)
+        {
+            global_best_position = best_position;
+            std::cout << "Old global best mse: " << global_best_mse << ", new global best mse: " << best_mse << std::endl;
+            global_best_mse = best_mse;
+        }
+    }
+}
+
+// function for particle swarm optimization
+void pso(string filename, float k, int num_particles, double inertia, double cognitive, double social, int num_threads)
+{
+    // process file of FENs
+    vector<string> lines;
+    vector<float> results;
+    processFENs(filename, lines, results);
+
+    // initialize particles
+    vector<Particle> particles;
+    for (int i = 0; i < num_particles; i++)
+    {
+        Particle particle = Particle();
+        particles.push_back(particle);
+    }
+
+    // initialize global best position and mse
+    vector<float> global_best_position;
+    double global_best_mse = 1000000;
+
+    // run pso
+    bool improved = true;
+    int i = 1;
+    while (improved)
+    {
+        // set improved to false
+        improved = false;
+
+        // initialize threads
+        vector<thread> threads;
+
+        // evaluate particles
+        int particlesPerThread = num_particles / num_threads;
+        for (int j = 0; j < num_threads; j++)
+        {
+            // create thread
+            thread t(evaluateParticles, ref(particles), j * particlesPerThread, particlesPerThread, ref(lines), ref(results), k, ref(improved), ref(global_best_position), ref(global_best_mse));
+
+            // add thread to vector
+            threads.push_back(move(t));
+        }
+
+        // wait for threads to finish
+        for (int j = 0; j < num_threads; j++)
+        {
+            threads[j].join();
+        }
+
+        // update particles
+        for (int j = 0; j < particles.size(); j++)
+        {
+            // update velocity and position
+            std::cout << "Updating particle " << j + 1 << std::endl;
+            particles[j].update_velocity(inertia, cognitive, social, global_best_position);
+            particles[j].update_position();
+        }
+
+        // print progress
+        std::cout << "Iteration " << i + 1 << " complete" << endl;
+        i++;
+
+        // print global best mse
+        std::cout << "Global best mse: " << global_best_mse << endl;
+
+        // save best parameters
+        vector<int> intPosition;
+        for (int j = 0; j < global_best_position.size(); j++)
+        {
+            intPosition.push_back(round(global_best_position[j]));
+        }
+
+        saveParameters("best_parameters.txt", intPosition);
+    }
+}
 
 // process file of FENs
 void processFENs(string filename, vector<string>& lines, vector<float>& results)
@@ -34,7 +251,7 @@ void processFENs(string filename, vector<string>& lines, vector<float>& results)
         // print progress
         if (lines.size() % 10000 == 0)
         {
-            cout << lines.size() << " lines processed" << endl;
+            std::cout << lines.size() << " lines processed" << endl;
         }
     } 
 
@@ -61,10 +278,16 @@ float mse(vector<string>& lines, vector<float>& results, float k)
         float score = ai.quiesce(board, NEG_INF, POS_INF) * (board.getNextMove() == WHITE ? 1 : -1);
 
         // map quiesce score to sigmoid using pow function
-        float sigmoid = 1 / (1 + pow(10, -k * score / 400));
+        float sigmoid = 1 / (1 + pow(10, (-k * score) / 400));
 
         // add to total
         total += pow(sigmoid - result, 2);
+
+        // print progress
+        if (i % 10000 == 0)
+        {
+            std::cout << i << " lines processed" << endl;
+        }
     }
     
     // return mse
@@ -72,8 +295,13 @@ float mse(vector<string>& lines, vector<float>& results, float k)
 }
 
 // find the best k value for tuning
-/*void findBestK(std::string filename, float start, float end, float step)
+void findBestK(std::string filename, float start, float end, float step)
 {
+    // get lines and results
+    vector<string> lines;
+    vector<float> results;
+    processFENs(filename, lines, results);
+
     // initialize best k and mse
     float bestK = start;
     float bestMSE = 1000000;
@@ -82,7 +310,7 @@ float mse(vector<string>& lines, vector<float>& results, float k)
     for (float k = start; k <= end; k += step)
     {
         // get mse
-        float m = mse(filename, k);
+        float m = mse(lines, results, k);
 
         // if mse is less than best mse, update best mse and best k
         if (m < bestMSE)
@@ -93,14 +321,14 @@ float mse(vector<string>& lines, vector<float>& results, float k)
         }
 
         // print k and mse
-        cout << "k: " << k << endl;
-        cout << "MSE: " << m << endl;
+        std::cout << "k: " << k << endl;
+        std::cout << "MSE: " << m << endl;
     }
 
     // print best k and mse
-    cout << "Best k: " << bestK << endl;
-    cout << "Best MSE: " << bestMSE << endl;
-}*/
+    std::cout << "Best k: " << bestK << endl;
+    std::cout << "Best MSE: " << bestMSE << endl;
+}
 
 // vectorize parameters
 std::vector<int*> vectorizeParameters()
@@ -109,7 +337,7 @@ std::vector<int*> vectorizeParameters()
     vector<int*> parameters;
 
     // add parameters to vector
-    for (int piece = 0; piece < 3; piece++)
+    /*for (int piece = 0; piece < 6; piece++)
     {
         for (int phase = 0; phase < 2; phase++)
         {
@@ -121,21 +349,35 @@ std::vector<int*> vectorizeParameters()
                 }
             }
         }
-    }
+    }*/
 
     parameters.push_back(&PASSED_PAWN);
+    parameters.push_back(&UNOBSTRUCTED_PASSER);
     parameters.push_back(&UNSTOPPABLE_PASSED_PAWN);
     parameters.push_back(&CANDIDATE_PASSED_PAWN);
+    parameters.push_back(&UNOBSTRUCTED_CANDIDATE);
     parameters.push_back(&BACKWARD_PAWN_PENALTY);
     parameters.push_back(&ISOLATED_PAWN_PENALTY);
 
     parameters.push_back(&KNIGHT_OUTPOST);
     parameters.push_back(&KNIGHT_OUTPOST_ON_HOLE);
+    parameters.push_back(&KNIGHT_MOBILITY_MULTIPLIER);
+    parameters.push_back(&KNIGHT_MOBILITY_OFFSET);
+
+    parameters.push_back(&BISHOP_PAIR);
+    parameters.push_back(&BISHOP_MOBILITY_MULTIPLIER);
+    parameters.push_back(&BISHOP_MOBILITY_OFFSET);
 
     parameters.push_back(&ROOK_OPEN_FILE);
+    parameters.push_back(&ROOK_HORIZONTAL_MOBILITY_MULTIPLIER);
+    parameters.push_back(&ROOK_HORIZONTAL_MOBILITY_OFFSET);
+    parameters.push_back(&ROOK_VERTICAL_MOBILITY_MULTIPLIER);
+    parameters.push_back(&ROOK_VERTICAL_MOBILITY_OFFSET);
+    parameters.push_back(&ROOK_CONNECTED);
 
     parameters.push_back(&KING_BLOCK_ROOK_PENALTY);
     parameters.push_back(&SAFETY_TABLE_MULTIPLIER);
+    parameters.push_back(&MINOR_ATTACK_UNITS);
     parameters.push_back(&ROOK_ATTACK_UNITS);
     parameters.push_back(&QUEEN_ATTACK_UNITS);
     parameters.push_back(&ROOK_CHECK_UNITS);
@@ -155,7 +397,7 @@ vector<int*> vectorizeTablesSecondHalf()
     vector<int*> parameters;
 
     // add parameters to vector
-    for (int piece = 0; piece < 3; piece++)
+    for (int piece = 0; piece < 6; piece++)
     {
         for (int phase = 0; phase < 2; phase++)
         {
@@ -194,8 +436,8 @@ void loadParameters(string filename)
             *parameters[i] = param;
 
             // second half
-            if (i < secondHalf.size())
-                *secondHalf[i] = param;
+            /*if (i < secondHalf.size())
+                *secondHalf[i] = param;*/
 
             line.erase(0, pos + delimiter.length());
             i++;
@@ -205,21 +447,14 @@ void loadParameters(string filename)
         int param = stoi(line);
 
         // second half
-        if (i < secondHalf.size())
-            *secondHalf[i] = param;
+        /*if (i < secondHalf.size())
+            *secondHalf[i] = param;*/
 
         *parameters[i] = param;
         i++;
     }
-}
 
-// copy vector parameters to pointer parameters
-void copyParametersToPointers(vector<int> parameters, vector<int*> pointers)
-{
-    for (int i = 0; i < parameters.size(); i++)
-    {
-        *pointers[i] = parameters[i];
-    }
+    file.close();
 }
 
 // get parameters from pointers
@@ -265,19 +500,19 @@ void tune(string filename, float k)
 
             // increase parameter
             *parameter = originalParameter + 1;
-            saveParameters("parameters.txt", parameters);
+            saveParameters("parameters.txt", getParametersFromPointers(parameters));
             loadParameters("parameters.txt");
             float increasedMSE = mse(lines, results, k);
 
             // decrease parameter
             *parameter = originalParameter - 1;
-            saveParameters("parameters.txt", parameters);
+            saveParameters("parameters.txt", getParametersFromPointers(parameters));
             loadParameters("parameters.txt");
             float decreasedMSE = mse(lines, results, k);
 
             // reset parameter
             *parameter = originalParameter;
-            saveParameters("parameters.txt", parameters);
+            saveParameters("parameters.txt", getParametersFromPointers(parameters));
             loadParameters("parameters.txt");
 
             // update parameter if improved
@@ -292,19 +527,19 @@ void tune(string filename, float k)
                     *parameter = originalParameter - 1;
                 }
                 improved = true;
-                saveParameters("parameters.txt", parameters);
+                saveParameters("parameters.txt", getParametersFromPointers(parameters));
             }
             else if (increasedMSE < bestMSE)
             {
                 *parameter = originalParameter + 1;
                 improved = true;
-                saveParameters("parameters.txt", parameters);
+                saveParameters("parameters.txt", getParametersFromPointers(parameters));
             }
             else if (decreasedMSE < bestMSE)
             {
                 *parameter = originalParameter - 1;
                 improved = true;
-                saveParameters("parameters.txt", parameters);
+                saveParameters("parameters.txt", getParametersFromPointers(parameters));
             }
 
             // update best mse
@@ -314,22 +549,25 @@ void tune(string filename, float k)
             loadParameters("parameters.txt");
 
             // print parameter and mses
-            cout << "Parameter: " << i << endl;
-            cout << "Original MSE: " << bestMSE << endl;
-            cout << "Increased MSE: " << increasedMSE << endl;
-            cout << "Decreased MSE: " << decreasedMSE << endl;
+            std::cout << "Parameter: " << i << endl;
+            std::cout << "Original MSE: " << bestMSE << endl;
+            std::cout << "Increased MSE: " << increasedMSE << endl;
+            std::cout << "Decreased MSE: " << decreasedMSE << endl;
         }
+
+        // save a stable version of the parameters
+        saveParameters("stable_parameters.txt", getParametersFromPointers(parameters));
     }
 }
 
 // save parameters to file
-void saveParameters(string filename, vector<int*> parameters)
+void saveParameters(string filename, vector<int> parameters)
 {
     ofstream outputFile;
     outputFile.open(filename);
     for (int i = 0; i < parameters.size(); i++)
     {
-        outputFile << *parameters[i];
+        outputFile << parameters[i];
         if (i != parameters.size() - 1)
         {
             outputFile << ",";

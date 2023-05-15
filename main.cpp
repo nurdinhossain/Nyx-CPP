@@ -24,7 +24,11 @@ int main()
 	processRookAttacks("rookAttackTable.txt");
 
 	// load parameters
-	loadParameters("parameters.txt");
+	//loadParameters("best_parameters.txt");
+	srand(time(NULL));
+
+	// pso
+	//pso("positions.txt", 0.5, 25, 0.7, 0.15, 0.15, 5);
 
 	/*************
 	* SOCKET SETUP
@@ -38,7 +42,7 @@ int main()
 	*************/
 	Board board = Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 	AI master = AI(false);
-	TranspositionTable* tt = new TranspositionTable(256);
+	TranspositionTable* tt = new TranspositionTable(TT_SIZE);
 	bool enemyMoveMade = false;
 	bool allyMoveMade = false;
 
@@ -54,6 +58,7 @@ int main()
 		{
 			// hold until last character is 'E', 'q', 'r', 'b', or 'n'
 			while (buffer[buffer.length() - 1] != 'E' && buffer[buffer.length() - 1] != 'q' && buffer[buffer.length() - 1] != 'r' && buffer[buffer.length() - 1] != 'b' && buffer[buffer.length() - 1] != 'n') {}
+			std::string input = buffer.substr(0, buffer.length());
 
 			// generate moves list
 			Move moves[MAX_MOVES];
@@ -62,12 +67,12 @@ int main()
 			board.generateMoves(moves, numMoves);
 
 			// process move
-			std::cout << buffer << std::endl;
-			int firstCommaIndex = buffer.find(",");
-			int secondCommIndex = buffer.find(",", firstCommaIndex + 1);
-			string fromIndexStr = buffer.substr(0, firstCommaIndex);
-			string toIndexStr = buffer.substr(firstCommaIndex + 1, secondCommIndex - firstCommaIndex - 1);
-			string promotionStr = buffer.substr(secondCommIndex + 1, buffer.length() - secondCommIndex - 1);
+			std::cout << input << std::endl;
+			int firstCommaIndex = input.find(",");
+			int secondCommIndex = input.find(",", firstCommaIndex + 1);
+			string fromIndexStr = input.substr(0, firstCommaIndex);
+			string toIndexStr = input.substr(firstCommaIndex + 1, secondCommIndex - firstCommaIndex - 1);
+			string promotionStr = input.substr(secondCommIndex + 1, input.length() - secondCommIndex - 1);
 			Square fromIndex = static_cast<Square>(stoi(fromIndexStr));
 			Square toIndex = static_cast<Square>(stoi(toIndexStr));
 			std::cout << "From: " << indexToSquare(fromIndex) << " To: " << indexToSquare(toIndex) << " Promotion: " << promotionStr << std::endl;
@@ -127,14 +132,27 @@ int main()
 		// otherwise if buffer contains the word "start" and ends with 'L', start the search
 		else if (buffer.find("start") != string::npos && buffer[buffer.length() - 1] == 'L' && !allyMoveMade)
 		{
+			std::string input = buffer.substr(0, buffer.length());
+			std::cout << input << std::endl;
+
 			// extract time limit from format "start <time_limit_in_decimal>L"
-			int spaceIndex = buffer.find(" ");
-			int timeLimit = stoi(buffer.substr(spaceIndex + 1, buffer.length() - spaceIndex - 2));
+			int spaceIndex = input.find(" ");
+			int timeLimit = stoi(input.substr(spaceIndex + 1, input.length() - spaceIndex - 2));
 			MAX_TIME = timeLimit;
+
+			// if we have an exact score for this position, halve the time limit
+			Entry* entry = tt->probe(board.getCurrentHash());
+			UInt64 smpKey = entry->smpKey;
+			UInt64 data = entry->data;
+			if (board.getCurrentHash() == (smpKey ^ data))
+			{
+				if (((data >> 40) & 3) == EXACT)
+					MAX_TIME /= 2;
+			}
 
 			// search
 			board.print();
-			Move move = threadedSearch(master, board, tt, sock);
+			Move move = threadedSearch(master, board, tt, sock, buffer);
 			board.makeMove(move);
 			master.getSearchStats().clear();
 
@@ -145,6 +163,19 @@ int main()
 			// set allyMoveMade to true and enemyMoveMade to false
 			allyMoveMade = true;
 			enemyMoveMade = false;
+
+			// set time back to 600
+			MAX_TIME = 600;
+		}
+		else if (buffer.find("ponder") != string::npos && !enemyMoveMade)
+		{
+			// search
+			Move move = threadedSearch(master, board, tt, sock, buffer);
+			master.getSearchStats().clear();
+
+			// send "ok" to server
+			string message = "ok";
+			sendMessage(sock, message);
 		}
 	}
 

@@ -14,6 +14,7 @@ void scoreMoves(Board& board, TranspositionTable* tt, Move killerMoves[][2], Mov
     for (int i = 0; i < numMoves; i++) 
     {
         Move move = moves[i];
+        moves[i].score = 0;
 
         // check for tt move
         if (move.from == ttMove.from && move.to == ttMove.to && move.type == ttMove.type)
