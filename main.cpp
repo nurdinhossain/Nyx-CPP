@@ -27,8 +27,19 @@ int main()
 	//loadParameters("best_parameters.txt");
 	srand(time(NULL));
 
+	// get console input for fen
+	/*string fen;
+	cout << "Enter FEN: ";
+	getline(cin, fen);
+	Board board = Board(fen);
+	AI master = AI(false);
+	TranspositionTable* tt = new TranspositionTable(TT_SIZE);
+	string buffer;
+	Move move = threadedSearch(master, board, tt, -1, buffer);*/
+
 	// pso
-	//pso("positions.txt", 0.5, 25, 0.7, 0.15, 0.15, 5);
+	/*while (true)
+		pso("positions.txt", 0.5, 15, 0.7, 0.2, 0.1, 1);*/
 
 	/*************
 	* SOCKET SETUP

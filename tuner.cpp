@@ -149,6 +149,8 @@ void evaluateParticles(vector<Particle>& particles, int startIndex, int numParti
             std::cout << "Old global best mse: " << global_best_mse << ", new global best mse: " << best_mse << std::endl;
             global_best_mse = best_mse;
         }
+
+        std::cout << "Particle " << i + 1 << " done" << std::endl;
     }
 }
 

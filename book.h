@@ -13,4 +13,4 @@ int ambiguousMove(Board& board, Move moves[], int moveCount, Piece piece, int sq
 std::string processResult(std::string result);
 
 // method to convert a vector of strings (game) into a vector of fen strings
-std::vector<std::string> processGame(std::vector<std::string> game);
+std::vector<std::string> processGame(std::vector<std::string> game, std::string startFen);

@@ -209,7 +209,7 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
             Square ep = board.makeNullMove();
 
             // get reduction
-            int R = depth > 6 ? MAX_R : MIN_R;
+            int R = (depth / 3) + 2;
 
             // search
             int score = -search(board, transpositionTable_, depth - R - 1, ply + 1, -beta, -beta + 1, !cut, start, buffer);
@@ -221,11 +221,7 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
             if (score >= beta)
             {
                 searchStats_.nullReductions++;
-                depth -= DR;
-                if (depth <= 0)
-                {
-                    return reliableEval;
-                }
+                return beta;
             }
         }
     }
@@ -564,6 +560,15 @@ Move AI::getBestMove(Board& board, TranspositionTable* transpositionTable_, int 
             std::cout << ", score: " << bestScore / 100.0 << ", ";
             searchStats_.print();
 
+            // print info
+            std::string stringMove = indexToSquare(bestMove.from) + indexToSquare(bestMove.to);
+            if (bestMove.type == KNIGHT_PROMOTION || bestMove.type == KNIGHT_PROMOTION_CAPTURE) stringMove += "n";
+            else if (bestMove.type == BISHOP_PROMOTION || bestMove.type == BISHOP_PROMOTION_CAPTURE) stringMove += "b";
+            else if (bestMove.type == ROOK_PROMOTION || bestMove.type == ROOK_PROMOTION_CAPTURE) stringMove += "r";
+            else if (bestMove.type == QUEEN_PROMOTION || bestMove.type == QUEEN_PROMOTION_CAPTURE) stringMove += "q";
+            std::string info = "info depth " + std::to_string(depth) + " score cp " + std::to_string(bestScore) + " pv " + stringMove + "\n";
+            //std::cout << info;
+
             // adjust time depending on pv changes  
             if (pvChanges > 1)
             {
@@ -574,12 +579,6 @@ Move AI::getBestMove(Board& board, TranspositionTable* transpositionTable_, int 
             // send info to gui
             if (socket != -1)
             {
-                std::string stringMove = indexToSquare(bestMove.from) + indexToSquare(bestMove.to);
-                if (bestMove.type == KNIGHT_PROMOTION || bestMove.type == KNIGHT_PROMOTION_CAPTURE) stringMove += "n";
-                else if (bestMove.type == BISHOP_PROMOTION || bestMove.type == BISHOP_PROMOTION_CAPTURE) stringMove += "b";
-                else if (bestMove.type == ROOK_PROMOTION || bestMove.type == ROOK_PROMOTION_CAPTURE) stringMove += "r";
-                else if (bestMove.type == QUEEN_PROMOTION || bestMove.type == QUEEN_PROMOTION_CAPTURE) stringMove += "q";
-                std::string info = "info depth " + std::to_string(depth) + " score cp " + std::to_string(bestScore) + " pv " + stringMove + "\n";
                 sendMessage(socket, info);
             }
         }
@@ -596,54 +595,6 @@ Move AI::getBestMove(Board& board, TranspositionTable* transpositionTable_, int 
 
     // return best move
     return bestMove;
-}
-
-// print pv line
-void printPV(Board& board, TranspositionTable* transpositionTable_)
-{
-    // create copy of board
-    Board boardCopy = Board(board.getFen());
-
-    // print pv line
-    std::cout << "pv line: ";
-    while (true)
-    {
-        // get entry
-        Entry* entry = transpositionTable_->probe(boardCopy.getCurrentHash());
-
-        // get key and data
-        UInt64 smpKey = entry->smpKey;
-        UInt64 data = entry->data;
-
-        // check if the entry is valid
-        if (boardCopy.getCurrentHash() != (smpKey ^ data))
-        {
-            std::cout << std::endl;
-            return;
-        }
-
-        // extract flag from data
-        Flag entryFlag = static_cast<Flag>((data >> 40) & 3);
-
-        // if flag is not EXACT, return
-        if (entryFlag != EXACT)
-        {
-            std::cout << std::endl;
-            return;
-        }
-
-        // extract move from data
-        Square to = static_cast<Square>(data & 0x3F);
-        Square from = static_cast<Square>((data >> 6) & 0x3F);
-        MoveType type = static_cast<MoveType>((data >> 12) & 0xF);
-
-        // make move
-        Move move = { type, from, to };
-        boardCopy.makeMove(move);
-
-        // print move
-        std::cout << indexToSquare(from) << indexToSquare(to) << " ";
-    }
 }
 
 // threaded search method
@@ -698,7 +649,13 @@ Move threadedSearch(AI& master, Board& board, TranspositionTable* transpositionT
         delete slaves[i];
     }
 
-    std::cout << "search finished" << std::endl;
+    // print best move in uci format
+    std::string stringMove = indexToSquare(bestMove.from) + indexToSquare(bestMove.to);
+    if (bestMove.type == KNIGHT_PROMOTION || bestMove.type == KNIGHT_PROMOTION_CAPTURE) stringMove += "n";
+    else if (bestMove.type == BISHOP_PROMOTION || bestMove.type == BISHOP_PROMOTION_CAPTURE) stringMove += "b";
+    else if (bestMove.type == ROOK_PROMOTION || bestMove.type == ROOK_PROMOTION_CAPTURE) stringMove += "r";
+    else if (bestMove.type == QUEEN_PROMOTION || bestMove.type == QUEEN_PROMOTION_CAPTURE) stringMove += "q";
+    std::cout << "bestmove " << stringMove << std::endl;
 
     // return best move
     return bestMove;

@@ -25,9 +25,6 @@ const int REVERSE_FUTILE_MAX_DEPTH = 3;
 const int REVERSE_FUTILE_MARGINS[] = { 0, 250, 450, 700 };
 
 // Null move pruning
-const int MAX_R = 4;
-const int MIN_R = 3;
-const int DR = 4; // depth reduction value
 const int NULL_DEPTH = 4;
 
 // SEE

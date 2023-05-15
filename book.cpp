@@ -143,10 +143,10 @@ std::string processResult(std::string result)
 }
 
 // method to convert a vector of strings (game) into fen strings
-std::vector<std::string> processGame(std::vector<std::string> game)
+std::vector<std::string> processGame(std::vector<std::string> game, std::string startFen)
 {
     // initialize board
-    Board board = Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    Board board = Board(startFen);
 
     // initialize vector of fen strings
     std::vector<std::string> fenStrings;
