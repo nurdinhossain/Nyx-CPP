@@ -284,12 +284,6 @@ float mse(vector<string>& lines, vector<float>& results, float k)
 
         // add to total
         total += pow(sigmoid - result, 2);
-
-        // print progress
-        if (i % 10000 == 0)
-        {
-            std::cout << i << " lines processed" << endl;
-        }
     }
     
     // return mse
@@ -339,7 +333,7 @@ std::vector<int*> vectorizeParameters()
     vector<int*> parameters;
 
     // add parameters to vector
-    /*for (int piece = 0; piece < 6; piece++)
+    for (int piece = 0; piece < 6; piece++)
     {
         for (int phase = 0; phase < 2; phase++)
         {
@@ -351,7 +345,7 @@ std::vector<int*> vectorizeParameters()
                 }
             }
         }
-    }*/
+    }
 
     parameters.push_back(&PASSED_PAWN);
     parameters.push_back(&UNOBSTRUCTED_PASSER);
@@ -438,8 +432,8 @@ void loadParameters(string filename)
             *parameters[i] = param;
 
             // second half
-            /*if (i < secondHalf.size())
-                *secondHalf[i] = param;*/
+            if (i < secondHalf.size())
+                *secondHalf[i] = param;
 
             line.erase(0, pos + delimiter.length());
             i++;
@@ -449,8 +443,8 @@ void loadParameters(string filename)
         int param = stoi(line);
 
         // second half
-        /*if (i < secondHalf.size())
-            *secondHalf[i] = param;*/
+        if (i < secondHalf.size())
+            *secondHalf[i] = param;
 
         *parameters[i] = param;
         i++;

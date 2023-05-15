@@ -38,20 +38,29 @@ int main()
 	Move move = threadedSearch(master, board, tt, -1, buffer);*/
 
 	// pso
-	/*while (true)
-		pso("positions.txt", 0.5, 15, 0.7, 0.2, 0.1, 1);*/
+	while (true)
+	{
+		try {
+			// run pso
+			pso("positions.txt", 0.5, 100, 0.7, 0.2, 0.1, 5);
+		}
+		catch (exception e) {
+			cout << "Exception caught: " << e.what() << endl;
+			cout << "Restarting..." << endl;
+		}
+	}
 
 	/*************
 	* SOCKET SETUP
 	*************/
-    int sock = connectSocket();
+    /*int sock = connectSocket();
 	string buffer;
-	thread listenThread = initListenThread(sock, buffer);
+	thread listenThread = initListenThread(sock, buffer);*/
 
 	/*************
 	* MAIN PROGRAM
 	*************/
-	Board board = Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+	/*Board board = Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 	AI master = AI(false);
 	TranspositionTable* tt = new TranspositionTable(TT_SIZE);
 	bool enemyMoveMade = false;
@@ -194,7 +203,7 @@ int main()
 	delete tt;
 
 	closeSocket(sock);
-	killListenThread(listenThread);
+	killListenThread(listenThread);*/
 
 	return 0;
 }

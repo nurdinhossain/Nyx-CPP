@@ -2,7 +2,7 @@
 using UInt64 = unsigned long long;
 
 // constants
-const int PAWN_HASH_SIZE = 16; // in MB
+const int PAWN_HASH_SIZE = 2; // in MB
 
 // struct for storing pawn hash entries
 struct PawnEntry 

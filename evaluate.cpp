@@ -75,10 +75,10 @@ int evaluate(Board& board, PawnTable* pawnTable)
     openingScore += knightScore(board, WHITE, blackPawnAttacks) - knightScore(board, BLACK, whitePawnAttacks);
 
     // bishop mobility (square root of number of squares attacked)
-    //int whiteBishopMobility = (int)(BISHOP_MOBILITY_MULTIPLIER * sqrt((double)bishopMobility(board, WHITE, blackPawnAttacks))) - BISHOP_MOBILITY_OFFSET;
-    //int blackBishopMobility = (int)(BISHOP_MOBILITY_MULTIPLIER * sqrt((double)bishopMobility(board, BLACK, whitePawnAttacks))) - BISHOP_MOBILITY_OFFSET;
-    int whiteBishopMobility = BISHOP_MOBILITY_TABLE[bishopMobility(board, WHITE, blackPawnAttacks)];
-    int blackBishopMobility = BISHOP_MOBILITY_TABLE[bishopMobility(board, BLACK, whitePawnAttacks)];
+    int whiteBishopMobility = (int)(BISHOP_MOBILITY_MULTIPLIER * sqrt((double)bishopMobility(board, WHITE, blackPawnAttacks))) - BISHOP_MOBILITY_OFFSET;
+    int blackBishopMobility = (int)(BISHOP_MOBILITY_MULTIPLIER * sqrt((double)bishopMobility(board, BLACK, whitePawnAttacks))) - BISHOP_MOBILITY_OFFSET;
+    //int whiteBishopMobility = BISHOP_MOBILITY_TABLE[bishopMobility(board, WHITE, blackPawnAttacks)];
+    //int blackBishopMobility = BISHOP_MOBILITY_TABLE[bishopMobility(board, BLACK, whitePawnAttacks)];
     openingScore += whiteBishopMobility - blackBishopMobility;
 
     // rook score
@@ -176,8 +176,8 @@ int knightScore(Board& board, Color color, UInt64 enemyPawnAttacks)
 
         // add bonus for knight mobility
         int mobility = popCount(KNIGHT_ATTACKS[square] & ~(enemyPawnAttacks | board.getOccupied(color)));
-        //score += (int)(KNIGHT_MOBILITY_MULTIPLIER * sqrt((double)mobility)) - KNIGHT_MOBILITY_OFFSET;
-        score += KNIGHT_MOBILITY_TABLE[mobility];
+        score += (int)(KNIGHT_MOBILITY_MULTIPLIER * sqrt((double)mobility)) - KNIGHT_MOBILITY_OFFSET;
+        //score += KNIGHT_MOBILITY_TABLE[mobility];
 
         knights &= knights - 1;
     }
@@ -275,10 +275,10 @@ void rookScore(Board& board, Color color, UInt64 enemyPawnAttacks, int& openingS
         rookAttack = lookupRookAttack(square, board.getFullOccupied() ^ (1ULL << square));
         int horizontalMobility = popCount(rookAttack & RANK_MASKS[square / 8] & ~(enemyPawnAttacks | board.getOccupied(color)));
         int verticalMobility = popCount(rookAttack & FILE_MASKS[square % 8] & ~(enemyPawnAttacks | board.getOccupied(color)));
-        //openingScore += (int)(ROOK_HORIZONTAL_MOBILITY_MULTIPLIER * sqrt((double)horizontalMobility)) - ROOK_HORIZONTAL_MOBILITY_OFFSET;
-        //endgameScore += (int)(ROOK_VERTICAL_MOBILITY_MULTIPLIER * sqrt((double)verticalMobility)) - ROOK_VERTICAL_MOBILITY_OFFSET;
-        openingScore += ROOK_HORIZONTAL_MOBILITY_TABLE[horizontalMobility];
-        endgameScore += ROOK_VERTICAL_MOBILITY_TABLE[verticalMobility];
+        openingScore += (int)(ROOK_HORIZONTAL_MOBILITY_MULTIPLIER * sqrt((double)horizontalMobility)) - ROOK_HORIZONTAL_MOBILITY_OFFSET;
+        endgameScore += (int)(ROOK_VERTICAL_MOBILITY_MULTIPLIER * sqrt((double)verticalMobility)) - ROOK_VERTICAL_MOBILITY_OFFSET;
+        //openingScore += ROOK_HORIZONTAL_MOBILITY_TABLE[horizontalMobility];
+        //endgameScore += ROOK_VERTICAL_MOBILITY_TABLE[verticalMobility];
 
         rooks &= rooks - 1;
     }
@@ -586,7 +586,7 @@ void kingScore(Board& board, Color color, int& openingScore, int& endgameScore)
     // ensure attack units are positive
     attackUnits = std::max(attackUnits, 0);
 
-    //int tableSafetyScore = std::min( (int)(0.01 * SAFETY_TABLE_MULTIPLIER * attackUnits * attackUnits), 500 );
-    int tableSafetyScore = std::min(SAFETY_TABLE[attackUnits], 500);
+    int tableSafetyScore = std::min( (int)(0.01 * SAFETY_TABLE_MULTIPLIER * attackUnits * attackUnits), 500 );
+    //int tableSafetyScore = std::min(SAFETY_TABLE[attackUnits], 500);
     openingScore -= tableSafetyScore;
 }
