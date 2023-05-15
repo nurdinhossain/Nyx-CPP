@@ -203,7 +203,7 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
         }
 
         // extended null move reductions
-        if (nullOk(board, depth))
+        if (nullOk(board, depth) && reliableEval >= beta)
         {
             // make null move
             Square ep = board.makeNullMove();
