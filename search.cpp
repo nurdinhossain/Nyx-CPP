@@ -228,23 +228,23 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
                 }
             }
         }
+    }
 
-        // multi-cut pruning
-        if (cut && depth >= MULTI_CUT_R)
+    // multi-cut pruning
+    if (cut && depth >= MULTI_CUT_R)
+    {
+        int c = 0;
+        for (int i = 0; i < std::min(numMoves, MULTI_CUT_M); i++)
         {
-            int c = 0;
-            for (int i = 0; i < std::min(numMoves, MULTI_CUT_M); i++)
+            board.makeMove(moves[i]);
+            int score = -search(board, transpositionTable_, depth-1-MULTI_CUT_R, ply + 1, -beta, -beta + 1, i != 0, start, buffer);
+            board.unmakeMove(moves[i]);
+            if (score >= beta)
             {
-                board.makeMove(moves[i]);
-                int score = -search(board, transpositionTable_, depth-1-MULTI_CUT_R, ply + 1, -beta, -beta + 1, i != 0, start, buffer);
-                board.unmakeMove(moves[i]);
-                if (score >= beta)
+                if (++c == MULTI_CUT_C) 
                 {
-                    if (++c == MULTI_CUT_C) 
-                    {
-                        searchStats_.multiCutPruned++;
-                        return beta; // mc-prune
-                    }
+                    searchStats_.multiCutPruned++;
+                    return beta; // mc-prune
                 }
             }
         }
