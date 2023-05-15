@@ -95,7 +95,7 @@ double Particle::getBestMSE()
 }
 
 // evaluate particle
-bool Particle::evaluate(vector<string>& lines, vector<float>& results, float k)
+bool Particle::evaluate(vector<string>& lines, vector<float>& results, float k, bool& locked)
 {
     vector<int> intPosition;
     for (int i = 0; i < position.size(); i++)
@@ -104,8 +104,15 @@ bool Particle::evaluate(vector<string>& lines, vector<float>& results, float k)
         intPosition.push_back(round(position[i]));
     }
 
+    // save/load parameters only if unlocked
+    while (locked)
+    {
+        // wait
+    }
+    locked = true;
     saveParameters("parameters.txt", intPosition);
     loadParameters("parameters.txt");
+    locked = false;
 
     // get mse
     double score = mse(lines, results, k);
@@ -124,13 +131,13 @@ bool Particle::evaluate(vector<string>& lines, vector<float>& results, float k)
 }
 
 // function for evaluating multiple particles
-void evaluateParticles(vector<Particle>& particles, int startIndex, int numParticles, vector<string>& lines, vector<float>& results, float k, bool& improved, vector<float>& global_best_position, double& global_best_mse)
+void evaluateParticles(vector<Particle>& particles, int startIndex, int numParticles, vector<string>& lines, vector<float>& results, float k, bool& improved, vector<float>& global_best_position, double& global_best_mse, bool& locked)
 {
     // evaluate particles
     for (int i = startIndex; i < startIndex + numParticles; i++)
     {
         // evaluate particle
-        bool particleImproved = particles[i].evaluate(lines, results, k);
+        bool particleImproved = particles[i].evaluate(lines, results, k, locked);
 
         // update improved
         if (particleImproved)
@@ -174,9 +181,25 @@ void pso(string filename, float k, int num_particles, double inertia, double cog
     vector<float> global_best_position;
     double global_best_mse = 1000000;
 
+    // lock for saving/loading parameters
+    bool locked = false;
+
+    // evaluate random particle to get best position and mse
+    int randomIndex = rand() % num_particles;
+    particles[randomIndex].evaluate(lines, results, k, locked);
+    global_best_position = particles[randomIndex].getBestPosition();
+    global_best_mse = particles[randomIndex].getBestMSE();
+
+    // update all particles velocities and positions
+    for (int i = 0; i < particles.size(); i++)
+    {
+        particles[i].update_velocity(inertia, cognitive, social, global_best_position);
+        particles[i].update_position();
+    }
+
     // run pso
     bool improved = true;
-    int i = 1;
+    int i = 0;
     while (improved)
     {
         // set improved to false
@@ -190,7 +213,7 @@ void pso(string filename, float k, int num_particles, double inertia, double cog
         for (int j = 0; j < num_threads; j++)
         {
             // create thread
-            thread t(evaluateParticles, ref(particles), j * particlesPerThread, particlesPerThread, ref(lines), ref(results), k, ref(improved), ref(global_best_position), ref(global_best_mse));
+            thread t(evaluateParticles, ref(particles), j * particlesPerThread, particlesPerThread, ref(lines), ref(results), k, ref(improved), ref(global_best_position), ref(global_best_mse), ref(locked));
 
             // add thread to vector
             threads.push_back(move(t));
