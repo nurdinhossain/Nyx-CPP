@@ -33,7 +33,7 @@ class Particle
         double getBestMSE();
 
         // evaluate particle
-        bool evaluate(vector<string>& lines, vector<float>& results, float k);
+        bool evaluate(vector<string>& lines, vector<float>& results, float k, bool& locked);
 
     private:
         // position
@@ -50,7 +50,7 @@ class Particle
 };
 
 // function for evaluating multiple particles
-void evaluateParticles(vector<Particle>& particles, int startIndex, int numParticles, vector<string>& lines, vector<float>& results, float k, bool& improved, vector<float>& global_best_position, double& global_best_mse);
+void evaluateParticles(vector<Particle>& particles, int startIndex, int numParticles, vector<string>& lines, vector<float>& results, float k, bool& improved, vector<float>& global_best_position, double& global_best_mse, bool& locked);
 
 // function for particle swarm optimization
 void pso(string filename, float k, int num_particles, double inertia, double cognitive, double social, int numThreads);
