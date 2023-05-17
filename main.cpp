@@ -24,7 +24,6 @@ int main()
 	processRookAttacks("rookAttackTable.txt");
 
 	// load parameters
-	loadParameters("best_parameters.txt");
 	srand(time(NULL));
 
 	// get console input for fen
@@ -40,14 +39,9 @@ int main()
 	// pso
 	while (true)
 	{
-		try {
-			// run pso
-			pso("positions.txt", 0.5, 25, 0.7, 0.2, 0.1, 1);
-		}
-		catch (exception e) {
-			cout << "Exception caught: " << e.what() << endl;
-			cout << "Restarting..." << endl;
-		}
+		// run pso
+		loadParameters("best_parameters.txt");
+		pso("positions.txt", 0.5, 25, 0.7, 0.2, 0.1, 1);
 	}
 
 	/*************
