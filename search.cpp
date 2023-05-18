@@ -65,18 +65,6 @@ AI::AI()
 {
     // set the pawn table size
     pawnTable_ = new PawnTable(PAWN_HASH_SIZE);
-
-    // set the depth preferred flag
-    depthPreferred_ = false;
-}
-
-AI::AI(bool depthPreferred)
-{
-    // set the pawn table size
-    pawnTable_ = new PawnTable(PAWN_HASH_SIZE);
-
-    // set the depth preferred flag
-    depthPreferred_ = depthPreferred;
 }
 
 AI::~AI()
@@ -224,23 +212,23 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
                 return beta;
             }
         }
-    }
 
-    // multi-cut pruning
-    if (cut && depth >= MULTI_CUT_R)
-    {
-        int c = 0;
-        for (int i = 0; i < std::min(numMoves, MULTI_CUT_M); i++)
+        // multi-cut pruning
+        if (cut && depth >= MULTI_CUT_R)
         {
-            board.makeMove(moves[i]);
-            int score = -search(board, transpositionTable_, depth-1-MULTI_CUT_R, ply + 1, -beta, -beta + 1, i != 0, start, buffer);
-            board.unmakeMove(moves[i]);
-            if (score >= beta)
+            int c = 0;
+            for (int i = 0; i < std::min(numMoves, MULTI_CUT_M); i++)
             {
-                if (++c == MULTI_CUT_C) 
+                board.makeMove(moves[i]);
+                int score = -search(board, transpositionTable_, depth-1-MULTI_CUT_R, ply + 1, -beta, -beta + 1, i != 0, start, buffer);
+                board.unmakeMove(moves[i]);
+                if (score >= beta)
                 {
-                    searchStats_.multiCutPruned++;
-                    return beta; // mc-prune
+                    if (++c == MULTI_CUT_C) 
+                    {
+                        searchStats_.multiCutPruned++;
+                        return beta; // mc-prune
+                    }
                 }
             }
         }
@@ -331,7 +319,7 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
         if (score >= beta)
         {
             // store in transposition table
-            transpositionTable_->store(board.getCurrentHash(), LOWER_BOUND, depth, ply, score, moves[i], depthPreferred_);
+            transpositionTable_->store(board.getCurrentHash(), LOWER_BOUND, depth, ply, score, moves[i]);
 
             // store killer move/update history if quiet move
             if (moves[i].type <= QUEEN_CASTLE && abs(score) != abs(FAIL_SCORE))
@@ -373,7 +361,7 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
     }
 
     // store in transposition table
-    transpositionTable_->store(board.getCurrentHash(), flag, depth, ply, alpha, bestMove, depthPreferred_);
+    transpositionTable_->store(board.getCurrentHash(), flag, depth, ply, alpha, bestMove);
 
     // return alpha
     return alpha;
@@ -396,12 +384,12 @@ int AI::quiesce(Board& board, int alpha, int beta)
     }
 
     // delta pruning
-    /*int DELTA = PIECE_VALUES[QUEEN - 1];
+    int DELTA = PIECE_VALUES[QUEEN - 1];
     if (score + DELTA < alpha)
     {
         searchStats_.deltaPruned++;
         return alpha;
-    }*/
+    }
 
     // update alpha
     if (score > alpha)
@@ -422,7 +410,7 @@ int AI::quiesce(Board& board, int alpha, int beta)
     // loop through moves
     for (int i = 0; i < numMoves; i++)
     {
-        /*if (moves[i].type < KNIGHT_PROMOTION && moves[i].type != EN_PASSANT) // dont prune promos or ep
+        if (moves[i].type < KNIGHT_PROMOTION && moves[i].type != EN_PASSANT) // dont prune promos or ep
         {
             // see pruning
             int seeScore = see(board, moves[i].from, moves[i].to);
@@ -438,7 +426,7 @@ int AI::quiesce(Board& board, int alpha, int beta)
                 searchStats_.futileReductionsQ++;
                 continue;
             }
-        }*/
+        }
 
         // make move
         board.makeMove(moves[i]);
@@ -608,7 +596,7 @@ Move threadedSearch(AI& master, Board& board, TranspositionTable* transpositionT
     for (int i = 0; i < THREADS; i++)
     {
         boards[i] = new Board(board.getFen());
-        slaves[i] = new AI(false);
+        slaves[i] = new AI();
 
         // copy history table and killer moves
         for (int j = 0; j < 2; j++)

@@ -11,7 +11,7 @@ const int MAX_MOVES = 256;
 const int MAX_MOVES_ATTACK = 64;
 extern int MAX_TIME;
 const int KILLER_MAX_PLY = 64;
-const int THREADS = 5;
+const int THREADS = 0;
 
 // aspiration window    
 const int ASPIRATION_WINDOW[6] = { 50, 300, 600, 100000 };
@@ -55,7 +55,6 @@ class AI
 
         // constructor/destructor
         AI();
-        AI(bool depthPreferred);
         ~AI();
 
         // search methods
@@ -74,7 +73,6 @@ class AI
         PawnTable* pawnTable_;
         Move bestMoveCurrentIteration_;
         SearchStats searchStats_;
-        bool depthPreferred_;
 };
 
 // threaded search method

@@ -24,25 +24,28 @@ int main()
 	processRookAttacks("rookAttackTable.txt");
 
 	// load parameters
+	loadParameters("best_parameters.txt");
 	srand(time(NULL));
 
 	// get console input for fen
-	/*string fen;
+	string fen;
 	cout << "Enter FEN: ";
 	getline(cin, fen);
 	Board board = Board(fen);
-	AI master = AI(false);
+	AI master = AI();
 	TranspositionTable* tt = new TranspositionTable(TT_SIZE);
 	string buffer;
-	Move move = threadedSearch(master, board, tt, -1, buffer);*/
+	Move move = threadedSearch(master, board, tt, -1, buffer);
+
+	delete tt;
 
 	// pso
-	while (true)
+	/*while (true)
 	{
 		// run pso
 		loadParameters("best_parameters.txt");
 		pso("positions.txt", 0.5, 25, 0.7, 0.2, 0.1, 1);
-	}
+	}*/
 
 	/*************
 	* SOCKET SETUP

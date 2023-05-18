@@ -46,7 +46,7 @@ void uci()
             tt->clear();
 
             // reset AI
-            master = AI(false);
+            master = AI();
         }
         else if (buffer.substr(0, 8) == "position")
         {

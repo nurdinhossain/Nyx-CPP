@@ -126,7 +126,7 @@ Entry* TranspositionTable::probe(UInt64 key)
     return &table_[index];
 }
 
-void TranspositionTable::store(UInt64 key, Flag flag, int depth, int ply, int score, Move move, bool depthPreferred)
+void TranspositionTable::store(UInt64 key, Flag flag, int depth, int ply, int score, Move move)
 {
     // if score is a fail score, don't store it
     if (abs(score) == abs(FAIL_SCORE))
@@ -137,8 +137,8 @@ void TranspositionTable::store(UInt64 key, Flag flag, int depth, int ply, int sc
     // get the entry
     Entry* entry = probe(key);
 
-    // only replace if the depth is greater than the current depth and the depth is preferred
-    if (depthPreferred)
+    // if entry already exists and is same key, only replace if depth is greater
+    if (key == (entry->smpKey ^ entry->data))
     {
         if (depth < ((entry->data >> 34) & 0x3F))
         {
