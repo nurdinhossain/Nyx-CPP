@@ -220,7 +220,7 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
             for (int i = 0; i < std::min(numMoves, MULTI_CUT_M); i++)
             {
                 board.makeMove(moves[i]);
-                int score = -search(board, transpositionTable_, depth-1-MULTI_CUT_R, ply + 1, -beta, -beta + 1, i != 0, start, buffer);
+                int score = -search(board, transpositionTable_, depth-1-MULTI_CUT_R, ply + 1, -beta, -beta + 1, false, start, buffer);
                 board.unmakeMove(moves[i]);
                 if (score >= beta)
                 {
