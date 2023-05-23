@@ -22,18 +22,18 @@ int evaluate(Board& board, PawnTable* pawnTable);
 
 // bishop stuff
 bool hasBishopPair(Board& board, Color color);
-int bishopMobility(Board& board, Color color, UInt64 enemyPawnAttacks);
+int bishopMobility(Board& board, Color color, UInt64 enemyPawnAttacks, int& attackUnits, UInt64 kingSafetyArea);
 
 // knight stuff
 bool isHole(Board& board, Color color, Square square);
 bool isKnightOutpost(Board& board, Color color, Square square);
-int knightScore(Board& board, Color color, UInt64 enemyPawnAttacks);
+int knightScore(Board& board, Color color, UInt64 enemyPawnAttacks, int& attackUnits, UInt64 kingSafetyArea);
 
 // rook stuff
 bool openFile(Board& board, Color color, int file);
 bool halfOpenFile(Board& board, Color color, int file);
 bool kingBlockRook(Board& board, Color color, Square rookSquare);
-void rookScore(Board& board, Color color, UInt64 enemyPawnAttacks, int& openingScore, int& endgameScore);
+void rookScore(Board& board, Color color, UInt64 enemyPawnAttacks, int& openingScore, int& endgameScore, int& attackUnits, UInt64 kingSafetyArea);
 
 // pawn stuff
 bool isPassed(Board& board, Color color, Square square);
@@ -50,4 +50,3 @@ UInt64 kingSafetyArea(Color color, Square square);
 UInt64 kingDangerArea(Color color, Square square);
 int kingPawnShieldScore(Board& board, UInt64 safetyArea, Color color);
 int kingPawnStormScore(Board& board, UInt64 dangerArea, Color color);
-void kingScore(Board& board, Color color, int& openingScore, int& endgameScore);

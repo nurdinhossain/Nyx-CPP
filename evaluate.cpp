@@ -37,6 +37,43 @@ int evaluate(Board& board, PawnTable* pawnTable)
     // ensure endgame score equals opening score for material
     int endgameScore = openingScore;
 
+    // king safety stuff
+    Square whiteKingIndex = static_cast<Square>(lsb(board.getPiece(WHITE, KING))), blackKingIndex = static_cast<Square>(lsb(board.getPiece(BLACK, KING)));
+    
+    // check for king pawn shield scaled by enemy material
+    UInt64 whiteSafetyArea = kingSafetyArea(WHITE, whiteKingIndex), blackSafetyArea = kingSafetyArea(BLACK, blackKingIndex);
+    openingScore += kingPawnShieldScore(board, whiteSafetyArea, WHITE) * PAWN_SHIELD * board.getMaterial(BLACK) / std::max(1, PAWN_SHIELD_DIVISOR * 100);
+    openingScore -= kingPawnShieldScore(board, blackSafetyArea, BLACK) * PAWN_SHIELD * board.getMaterial(WHITE) / std::max(1, PAWN_SHIELD_DIVISOR * 100);
+
+    // penalty for being stormed by enemy pawns
+    UInt64 whiteDangerArea = kingDangerArea(BLACK, whiteKingIndex), blackDangerArea = kingDangerArea(WHITE, blackKingIndex);
+    openingScore -= kingPawnStormScore(board, whiteDangerArea, WHITE) * PAWN_STORM * board.getMaterial(BLACK) / std::max(1, PAWN_STORM_DIVISOR * 100);
+    openingScore += kingPawnStormScore(board, blackDangerArea, BLACK) * PAWN_STORM * board.getMaterial(WHITE) / std::max(1, PAWN_STORM_DIVISOR * 100);
+
+    // attack units for safety area
+    int whiteAttackUnits = 0, blackAttackUnits = 0;
+    whiteSafetyArea |= KING_ATTACKS[whiteKingIndex];
+    blackSafetyArea |= KING_ATTACKS[blackKingIndex];
+
+    // attack units for queen
+    UInt64 whiteQueens = board.getPiece(WHITE, QUEEN), blackQueens = board.getPiece(BLACK, QUEEN);
+    while (whiteQueens)
+    {
+        Square index = static_cast<Square>(lsb(whiteQueens));
+        UInt64 attack = lookupQueenAttack(index, board.getFullOccupied() ^ (1ULL << index));
+        whiteAttackUnits += popCount(attack & blackSafetyArea) * QUEEN_ATTACK_UNITS;
+        if (attack & board.getPiece(BLACK, KING)) whiteAttackUnits += QUEEN_CHECK_UNITS;
+        whiteQueens &= whiteQueens - 1;
+    }
+    while (blackQueens)
+    {
+        Square index = static_cast<Square>(lsb(blackQueens));
+        UInt64 attack = lookupQueenAttack(index, board.getFullOccupied() ^ (1ULL << index));
+        blackAttackUnits += popCount(attack & whiteSafetyArea) * QUEEN_ATTACK_UNITS;
+        if (attack & board.getPiece(WHITE, KING)) blackAttackUnits += QUEEN_CHECK_UNITS;
+        blackQueens &= blackQueens - 1;
+    }
+
     // bishop pair
     if (hasBishopPair(board, WHITE))
         endgameScore += BISHOP_PAIR;
@@ -72,30 +109,25 @@ int evaluate(Board& board, PawnTable* pawnTable)
     }
 
     // knight score
-    openingScore += knightScore(board, WHITE, blackPawnAttacks) - knightScore(board, BLACK, whitePawnAttacks);
+    openingScore += knightScore(board, WHITE, blackPawnAttacks, whiteAttackUnits, blackSafetyArea) - knightScore(board, BLACK, whitePawnAttacks, blackAttackUnits, whiteSafetyArea);
 
     // bishop mobility (square root of number of squares attacked)
-    int whiteBishopMobility = (int)(BISHOP_MOBILITY_MULTIPLIER * sqrt((double)bishopMobility(board, WHITE, blackPawnAttacks))) - BISHOP_MOBILITY_OFFSET;
-    int blackBishopMobility = (int)(BISHOP_MOBILITY_MULTIPLIER * sqrt((double)bishopMobility(board, BLACK, whitePawnAttacks))) - BISHOP_MOBILITY_OFFSET;
-    //int whiteBishopMobility = BISHOP_MOBILITY_TABLE[bishopMobility(board, WHITE, blackPawnAttacks)];
-    //int blackBishopMobility = BISHOP_MOBILITY_TABLE[bishopMobility(board, BLACK, whitePawnAttacks)];
+    //int whiteBishopMobility = (int)(BISHOP_MOBILITY_MULTIPLIER * sqrt((double)bishopMobility(board, WHITE, blackPawnAttacks))) - BISHOP_MOBILITY_OFFSET;
+    //int blackBishopMobility = (int)(BISHOP_MOBILITY_MULTIPLIER * sqrt((double)bishopMobility(board, BLACK, whitePawnAttacks))) - BISHOP_MOBILITY_OFFSET;
+    int whiteBishopMobility = BISHOP_MOBILITY_TABLE[bishopMobility(board, WHITE, blackPawnAttacks, whiteAttackUnits, blackSafetyArea)];
+    int blackBishopMobility = BISHOP_MOBILITY_TABLE[bishopMobility(board, BLACK, whitePawnAttacks, blackAttackUnits, whiteSafetyArea)];
     openingScore += whiteBishopMobility - blackBishopMobility;
 
     // rook score
     int whiteOpeningRookScore = 0, whiteEndgameRookScore = 0;
     int blackOpeningRookScore = 0, blackEndgameRookScore = 0;
-    rookScore(board, WHITE, blackPawnAttacks, whiteOpeningRookScore, whiteEndgameRookScore);
-    rookScore(board, BLACK, whitePawnAttacks, blackOpeningRookScore, blackEndgameRookScore);
+    rookScore(board, WHITE, blackPawnAttacks, whiteOpeningRookScore, whiteEndgameRookScore, whiteAttackUnits, blackSafetyArea);
+    rookScore(board, BLACK, whitePawnAttacks, blackOpeningRookScore, blackEndgameRookScore, blackAttackUnits, whiteSafetyArea);
     openingScore += whiteOpeningRookScore - blackOpeningRookScore;
     endgameScore += whiteEndgameRookScore - blackEndgameRookScore;
 
     // king score
-    int whiteOpeningKingScore = 0, whiteEndgameKingScore = 0;
-    int blackOpeningKingScore = 0, blackEndgameKingScore = 0;
-    kingScore(board, WHITE, whiteOpeningKingScore, whiteEndgameKingScore);
-    kingScore(board, BLACK, blackOpeningKingScore, blackEndgameKingScore);
-    openingScore += whiteOpeningKingScore - blackOpeningKingScore;
-    endgameScore += whiteEndgameKingScore - blackEndgameKingScore;
+    openingScore += SAFETY_TABLE[whiteAttackUnits] - SAFETY_TABLE[blackAttackUnits];
 
     // piece square tables
     openingScore += board.getStaticEvalOpening();
@@ -114,7 +146,7 @@ bool hasBishopPair(Board& board, Color color)
     return board.getPieceCount(color, BISHOP) >= 2;
 }
 
-int bishopMobility(Board& board, Color color, UInt64 enemyPawnAttacks)
+int bishopMobility(Board& board, Color color, UInt64 enemyPawnAttacks, int& attackUnits, UInt64 safetyArea)
 {
     int score = 0;
 
@@ -123,7 +155,9 @@ int bishopMobility(Board& board, Color color, UInt64 enemyPawnAttacks)
     while (bishops)
     {
         Square square = static_cast<Square>(lsb(bishops));
-        score += popCount(lookupBishopAttack(square, board.getFullOccupied() ^ (1ULL << square)) & ~(enemyPawnAttacks | board.getOccupied(color)));
+        UInt64 attack = lookupBishopAttack(square, board.getFullOccupied() ^ (1ULL << square));
+        score += popCount(attack & ~(enemyPawnAttacks | board.getOccupied(color)));
+        attackUnits += popCount(attack & safetyArea) * MINOR_ATTACK_UNITS;
         bishops &= bishops - 1;
     }
 
@@ -155,7 +189,7 @@ bool isKnightOutpost(Board& board, Color color, Square square)
     return (enemyPawnAttack & board.getPiece(color, PAWN)) && (SIDES[1-color] & (1ULL << square));
 }
 
-int knightScore(Board& board, Color color, UInt64 enemyPawnAttacks)
+int knightScore(Board& board, Color color, UInt64 enemyPawnAttacks, int& attackUnits, UInt64 safetyArea)
 {
     int score = 0;
 
@@ -176,8 +210,9 @@ int knightScore(Board& board, Color color, UInt64 enemyPawnAttacks)
 
         // add bonus for knight mobility
         int mobility = popCount(KNIGHT_ATTACKS[square] & ~(enemyPawnAttacks | board.getOccupied(color)));
-        score += (int)(KNIGHT_MOBILITY_MULTIPLIER * sqrt((double)mobility)) - KNIGHT_MOBILITY_OFFSET;
-        //score += KNIGHT_MOBILITY_TABLE[mobility];
+        //score += (int)(KNIGHT_MOBILITY_MULTIPLIER * sqrt((double)mobility)) - KNIGHT_MOBILITY_OFFSET;
+        score += KNIGHT_MOBILITY_TABLE[mobility];
+        attackUnits += popCount(KNIGHT_ATTACKS[square] & safetyArea) * MINOR_ATTACK_UNITS;
 
         knights &= knights - 1;
     }
@@ -248,7 +283,7 @@ bool kingBlockRook(Board& board, Color color, Square rookSquare)
     return false;
 }
 
-void rookScore(Board& board, Color color, UInt64 enemyPawnAttacks, int& openingScore, int& endgameScore)
+void rookScore(Board& board, Color color, UInt64 enemyPawnAttacks, int& openingScore, int& endgameScore, int& attackUnits, UInt64 safetyArea)
 {
     // loop through all rooks
     UInt64 rooks = board.getPiece(color, ROOK);
@@ -275,10 +310,12 @@ void rookScore(Board& board, Color color, UInt64 enemyPawnAttacks, int& openingS
         rookAttack = lookupRookAttack(square, board.getFullOccupied() ^ (1ULL << square));
         int horizontalMobility = popCount(rookAttack & RANK_MASKS[square / 8] & ~(enemyPawnAttacks | board.getOccupied(color)));
         int verticalMobility = popCount(rookAttack & FILE_MASKS[square % 8] & ~(enemyPawnAttacks | board.getOccupied(color)));
-        openingScore += (int)(ROOK_HORIZONTAL_MOBILITY_MULTIPLIER * sqrt((double)horizontalMobility)) - ROOK_HORIZONTAL_MOBILITY_OFFSET;
-        endgameScore += (int)(ROOK_VERTICAL_MOBILITY_MULTIPLIER * sqrt((double)verticalMobility)) - ROOK_VERTICAL_MOBILITY_OFFSET;
-        //openingScore += ROOK_HORIZONTAL_MOBILITY_TABLE[horizontalMobility];
-        //endgameScore += ROOK_VERTICAL_MOBILITY_TABLE[verticalMobility];
+        //openingScore += (int)(ROOK_HORIZONTAL_MOBILITY_MULTIPLIER * sqrt((double)horizontalMobility)) - ROOK_HORIZONTAL_MOBILITY_OFFSET;
+        //endgameScore += (int)(ROOK_VERTICAL_MOBILITY_MULTIPLIER * sqrt((double)verticalMobility)) - ROOK_VERTICAL_MOBILITY_OFFSET;
+        openingScore += ROOK_HORIZONTAL_MOBILITY_TABLE[horizontalMobility];
+        endgameScore += ROOK_VERTICAL_MOBILITY_TABLE[verticalMobility];
+        attackUnits += popCount(rookAttack & safetyArea) * ROOK_ATTACK_UNITS;
+        if (rookAttack & board.getPiece(static_cast<Color>(1 - color), KING)) attackUnits += ROOK_CHECK_UNITS;
 
         rooks &= rooks - 1;
     }
@@ -534,59 +571,4 @@ UInt64 kingDangerArea(Color color, Square square)
     }
 
     return dangerArea;
-}
-
-void kingScore(Board& board, Color color, int& openingScore, int& endgameScore)
-{
-    // get king square   
-    Square kingIndex = static_cast<Square>(lsb(board.getPiece(color, KING)));
-
-    // check for king pawn shield scaled by enemy material
-    UInt64 safetyArea = kingSafetyArea(color, kingIndex);
-    openingScore += kingPawnShieldScore(board, safetyArea, color) * PAWN_SHIELD * board.getMaterial(static_cast<Color>(1 - color)) / std::max(1, PAWN_SHIELD_DIVISOR * 100);
-
-    // penalty for being stormed by enemy pawns
-    UInt64 dangerArea = kingDangerArea(color, kingIndex);
-    openingScore -= kingPawnStormScore(board, dangerArea, color) * PAWN_STORM * board.getMaterial(static_cast<Color>(1 - color)) / std::max(1, PAWN_STORM_DIVISOR * 100);
-
-    // check attack units in safety area
-    int attackUnits = 0;
-    safetyArea |= KING_ATTACKS[kingIndex];
-    UInt64 enemyKnights = board.getPiece(static_cast<Color>(1 - color), KNIGHT), enemyBishops = board.getPiece(static_cast<Color>(1 - color), BISHOP), enemyRooks = board.getPiece(static_cast<Color>(1 - color), ROOK), enemyQueens = board.getPiece(static_cast<Color>(1 - color), QUEEN);
-    while (enemyKnights)
-    {
-        Square square = static_cast<Square>(lsb(enemyKnights));
-        attackUnits += popCount(KNIGHT_ATTACKS[square] & safetyArea) * MINOR_ATTACK_UNITS;
-        enemyKnights &= enemyKnights - 1;
-    }
-    while (enemyBishops)
-    {
-        Square square = static_cast<Square>(lsb(enemyBishops));
-        UInt64 attack = lookupBishopAttack(square, board.getFullOccupied() ^ (1ULL << square));
-        attackUnits += popCount(attack & safetyArea) * MINOR_ATTACK_UNITS;
-        enemyBishops &= enemyBishops - 1;
-    }
-    while (enemyRooks)
-    {
-        Square square = static_cast<Square>(lsb(enemyRooks));
-        UInt64 attack = lookupRookAttack(square, board.getFullOccupied() ^ (1ULL << square));
-        attackUnits += popCount(attack & safetyArea) * ROOK_ATTACK_UNITS;
-        if (attack & board.getPiece(color, KING)) attackUnits += ROOK_CHECK_UNITS;
-        enemyRooks &= enemyRooks - 1;
-    }
-    while (enemyQueens)
-    {
-        Square square = static_cast<Square>(lsb(enemyQueens));
-        UInt64 attack = lookupQueenAttack(square, board.getFullOccupied() ^ (1ULL << square));
-        attackUnits += popCount(attack & safetyArea) * QUEEN_ATTACK_UNITS;
-        if (attack & board.getPiece(color, KING)) attackUnits += QUEEN_CHECK_UNITS;
-        enemyQueens &= enemyQueens - 1;
-    }
-    
-    // ensure attack units are positive
-    attackUnits = std::max(attackUnits, 0);
-
-    int tableSafetyScore = std::min( (int)(0.01 * SAFETY_TABLE_MULTIPLIER * attackUnits * attackUnits), 500 );
-    //int tableSafetyScore = std::min(SAFETY_TABLE[attackUnits], 500);
-    openingScore -= tableSafetyScore;
 }
