@@ -26,6 +26,9 @@ const int REVERSE_FUTILE_MARGINS[] = { 0, 250, 450, 700 };
 
 // Null move pruning
 const int NULL_DEPTH = 4;
+const int MAX_R = 4;
+const int MIN_R = 3;
+const int DR = 4;
 
 // SEE
 const int MAX_PIECES = 16;
@@ -33,11 +36,6 @@ const int MAX_PIECES = 16;
 // Internal iterative deepening
 const int MIN_IID_DEPTH = 5;
 const int IID_DR = 3;
-
-// Multi-cut 
-const int MULTI_CUT_R = 3;
-const int MULTI_CUT_C = 3;
-const int MULTI_CUT_M = 6;
 
 // methods for boosting search
 bool moveCausesCheck(Board& board, Move move);

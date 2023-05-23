@@ -59,21 +59,32 @@ void TranspositionTable::clear()
     }
 }
 
-Move TranspositionTable::getMove(UInt64 key)
+int TranspositionTable::getDepth(UInt64 data)
 {
-    // get the entry
-    Entry* entry = probe(key);
+    // get the depth
+    int depth = (data >> 34) & 0x3F;
 
-    // get key and data
-    UInt64 smpKey = entry->smpKey;
-    UInt64 data = entry->data;
+    // return the depth
+    return depth;
+}
+int TranspositionTable::getScore(UInt64 data)
+{
+    // get the score
+    int score = (data >> 16) & 0x3FFFF;
 
-    // check if the entry is valid
-    if (key != (smpKey ^ data))
-    {
-        return {QUIET, NONE, NONE};
-    }
+    // return the score
+    return score;
+}
+Flag TranspositionTable::getFlag(UInt64 data)
+{
+    // get the flag
+    Flag flag = static_cast<Flag>(data >> 40);
 
+    // return the flag
+    return flag;
+}
+Move TranspositionTable::getMove(UInt64 data)
+{
     // extract move from data
     Square to = static_cast<Square>(data & 0x3F);
     Square from = static_cast<Square>((data >> 6) & 0x3F);
@@ -137,15 +148,6 @@ void TranspositionTable::store(UInt64 key, Flag flag, int depth, int ply, int sc
     // get the entry
     Entry* entry = probe(key);
 
-    // if entry already exists and is same key, only replace if depth is greater
-    if (key == (entry->smpKey ^ entry->data))
-    {
-        if (depth < ((entry->data >> 34) & 0x3F))
-        {
-            return;
-        }
-    }
-
     // store the data in a thread-safe manner
     UInt64 smpKey = key;
     UInt64 data = 0ULL;
@@ -173,55 +175,4 @@ void TranspositionTable::store(UInt64 key, Flag flag, int depth, int ply, int sc
     // store the data
     entry->smpKey = smpKey;
     entry->data = data;
-}
-
-int TranspositionTable::getScore(UInt64 key, int depth, int ply, int alpha, int beta, bool pvNode)
-{
-    // get the entry
-    Entry* entry = probe(key);
-
-    // get key and data
-    UInt64 smpKey = entry->smpKey;
-    UInt64 data = entry->data;
-
-    // check if the entry is valid
-    if (key != (smpKey ^ data))
-    {
-        return FAIL_SCORE;
-    }
-
-    // get depth, score, and flag
-    int entryDepth = (data >> 34) & 0x3F;
-    int entryScore = (data >> 16) & 0x3FFFF;
-    Flag entryFlag = static_cast<Flag>((data >> 40) & 3);
-
-    // if key does match, check if the depth is sufficient
-    if (entryDepth >= depth)
-    {
-        // get the score
-        int score = correctScoreRead(entryScore - POS_INF, ply);
-
-        // check the flag
-        if (entryFlag == EXACT)
-        {
-            return score;
-        }
-        else if (entryFlag == UPPER_BOUND)
-        {
-            if (score <= alpha)
-            {
-                return score;
-            }
-        }
-        else if (entryFlag == LOWER_BOUND)
-        {
-            if (score >= beta)
-            {
-                return score;
-            }
-        }
-    }
-
-    // return negative infinity
-    return FAIL_SCORE;
 }

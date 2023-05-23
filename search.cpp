@@ -32,6 +32,7 @@ void SearchStats::print()
     std::cout << ", Razor Pruned: " << razorPruned;
     std::cout << ", MultiCut Pruned: " << multiCutPruned;
     std::cout << ", Extensions: " << extensions;
+    std::cout << ", Singular Extensions: " << singularExtensions; 
     std::cout << ", IID Hits: " << iidHits << std::endl;
 }
 
@@ -55,6 +56,7 @@ void SearchStats::clear()
     razorPruned = 0;
     multiCutPruned = 0;
     extensions = 0;
+    singularExtensions = 0;
     iidHits = 0;
 }
 
@@ -67,6 +69,15 @@ AI::AI()
     pawnTable_ = new PawnTable(PAWN_HASH_SIZE);
 }
 
+AI::AI(int id)
+{
+    // set the pawn table size
+    pawnTable_ = new PawnTable(PAWN_HASH_SIZE);
+
+    // set the id
+    id_ = id;
+}
+
 AI::~AI()
 {
     // delete the pawn table
@@ -74,7 +85,7 @@ AI::~AI()
 }
 
 // search
-int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth, int ply, int alpha, int beta, bool cut, std::chrono::steady_clock::time_point start, std::string& buffer)
+int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth, int ply, int alpha, int beta, std::chrono::steady_clock::time_point start, std::string& buffer)
 {
     // check for time
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
@@ -103,23 +114,58 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
     }
 
     // check for threefold repetition
-    if (ply > 0 && board.getHistory() > 2)
+    if (board.getHistory() > 1)
     {
         return DRAW;
     }
 
     // transposition table lookup
-    int ttScore = transpositionTable_->getScore(board.getCurrentHash(), depth, ply, alpha, beta, pvNode);
-    Move ttMove = transpositionTable_->getMove(board.getCurrentHash());
-    if (ttScore != FAIL_SCORE && ttMove.from != NONE)
-    {
-        if (ply == 0)
-        {
-            bestMoveCurrentIteration_ = ttMove;
-        }
+    Entry* ttEntry = transpositionTable_->probe(board.getCurrentHash());
+    UInt64 smpKey = ttEntry->smpKey, data = ttEntry->data;
+    int ttScore = FAIL_SCORE, ttDepth = 0;
+    Flag ttFlag = NO_FLAG;
+    Move ttMove = {BISHOP_PROMOTION_CAPTURE};
 
-        searchStats_.ttHits++;
-        return ttScore;
+    if ((smpKey ^ data) == board.getCurrentHash())
+    {
+        // get info from tt
+        ttDepth = transpositionTable_->getDepth(data);
+        ttMove = transpositionTable_->getMove(data);
+        ttScore = transpositionTable_->getScore(data);
+        ttScore = transpositionTable_->correctScoreRead(ttScore - POS_INF, ply);
+        ttFlag = transpositionTable_->getFlag(data);
+
+        if (ttDepth >= depth)
+        {
+            if (ttFlag == EXACT)
+            {
+                if (ply == 0)
+                {
+                    bestMoveCurrentIteration_ = ttMove;
+                }
+                searchStats_.ttHits++;
+                return ttScore;
+            }
+            else if (ttFlag == LOWER_BOUND)
+            {
+                alpha = std::max(alpha, ttScore);
+            }
+            else if (ttFlag == UPPER_BOUND)
+            {
+                beta = std::min(beta, ttScore);
+            }
+
+            // check for cutoff
+            if (alpha >= beta)
+            {
+                if (ply == 0)
+                {
+                    bestMoveCurrentIteration_ = ttMove;
+                }
+                searchStats_.ttHits++;
+                return ttScore;
+            }
+        }
     }
 
     // check for max depth
@@ -163,11 +209,6 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
     /******************* 
      *     PRUNING 
      *******************/
-
-    // sort moves 
-    scoreMoves(board, transpositionTable_, killerMoves_, moves, historyTable_, historyMax_, numMoves, ply);
-    sortMoves(moves, numMoves);
-
     if (!friendlyKingInCheck && !pvNode && extensions == 0)
     {
         // reliable eval score
@@ -197,10 +238,10 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
             Square ep = board.makeNullMove();
 
             // get reduction
-            int R = (depth / 3) + 2;
+            int R = depth > 6 ? MAX_R : MIN_R;
 
             // search
-            int score = -search(board, transpositionTable_, depth - R - 1, ply + 1, -beta, -beta + 1, !cut, start, buffer);
+            int score = -search(board, transpositionTable_, depth - R - 1, ply + 1, -beta, -beta + 1, start, buffer);
 
             // undo null move
             board.unmakeNullMove(ep);
@@ -208,27 +249,11 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
             // check for cutoff
             if (score >= beta)
             {
+                depth -= DR;
                 searchStats_.nullReductions++;
-                return beta;
-            }
-        }
-
-        // multi-cut pruning
-        if (cut && depth >= MULTI_CUT_R)
-        {
-            int c = 0;
-            for (int i = 0; i < std::min(numMoves, MULTI_CUT_M); i++)
-            {
-                board.makeMove(moves[i]);
-                int score = -search(board, transpositionTable_, depth-1-MULTI_CUT_R, ply + 1, -beta, -beta + 1, false, start, buffer);
-                board.unmakeMove(moves[i]);
-                if (score >= beta)
+                if (depth <= 0)
                 {
-                    if (++c == MULTI_CUT_C) 
-                    {
-                        searchStats_.multiCutPruned++;
-                        return beta; // mc-prune
-                    }
+                    return reliableEval;
                 }
             }
         }
@@ -237,30 +262,44 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
     /******************************
      * INTERNAL ITERATIVE DEEPENING 
      ******************************/
-    if ((ttMove.from == NONE) && depth > MIN_IID_DEPTH)
+    if (ttScore == FAIL_SCORE && depth > MIN_IID_DEPTH)
     {
         // search with reduced depth
-        search(board, transpositionTable_, depth - IID_DR, ply, alpha, beta, cut, start, buffer);
+        search(board, transpositionTable_, depth - IID_DR, ply, alpha, beta, start, buffer);
 
         // check if the tt entry is now valid
-        ttMove = transpositionTable_->getMove(board.getCurrentHash());
-        if (ttMove.from != NONE)
+        smpKey = ttEntry->smpKey, data = ttEntry->data;
+        if ((smpKey ^ data) == board.getCurrentHash())
         {
+            ttDepth = transpositionTable_->getDepth(data);
+            ttMove = transpositionTable_->getMove(data);
+            ttFlag = transpositionTable_->getFlag(data);
+            ttScore = transpositionTable_->getScore(data);
+            ttScore = transpositionTable_->correctScoreRead(ttScore - POS_INF, ply);
             searchStats_.iidHits++;
         }
     }
+
+    /******************* 
+     *     SEARCH 
+     *******************/
+    // sort moves 
+    scoreMoves(board, ttMove, killerMoves_, moves, historyTable_, historyMax_, numMoves, ply);
+    sortMoves(moves, numMoves);
 
     // initialize transposition flag and best move
     Flag flag = UPPER_BOUND;
     Move bestMove = moves[0];
 
-    /******************* 
-     *     SEARCH 
-     *******************/
-
     // loop through moves
     for (int i = 0; i < numMoves; i++)
     {
+        // continue if excluded move
+        if (moves[i].from == excludedMove_.from && moves[i].to == excludedMove_.to && moves[i].type == excludedMove_.type)
+        {
+            continue;
+        }
+
         // see if move causes check
         bool causesCheck = moveCausesCheck(board, moves[i]);
         bool pruningOk = !causesCheck && !friendlyKingInCheck && !pvNode && extensions == 0;
@@ -279,6 +318,37 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
             continue;
         }
 
+        // singular extension search
+        bool singularExtension = false;
+        if (ply > 0 && depth >= (4 + 2 * pvNode) && (moves[i].from == ttMove.from && moves[i].to == ttMove.to && moves[i].type == ttMove.type) && excludedMove_.from == NONE)
+        {
+            if (ttScore != FAIL_SCORE)
+            {
+                if (ttFlag == LOWER_BOUND && ttDepth >= depth - 3)
+                {
+                    int singularDepth = (depth - 1) / 2; 
+                    excludedMove_ = moves[i];
+                    int score = search(board, transpositionTable_, singularDepth, ply + 1, ttScore - 1, ttScore, start, buffer);
+                    excludedMove_ = {QUIET, NONE, NONE};
+
+                    // singular extension
+                    if (score < ttScore)
+                    {
+                        extensions++;
+                        singularExtension = true;
+                        searchStats_.singularExtensions++;
+                    }
+
+                    // otherwise, multi-cut prune
+                    else if (score >= beta)
+                    {
+                        searchStats_.multiCutPruned++;
+                        return beta;
+                    }
+                }
+            }
+        }
+
         // make move
         board.makeMove(moves[i]);
 
@@ -286,7 +356,7 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
         int score;
         if (i == 0)
         {
-            score = -search(board, transpositionTable_, depth - 1 + extensions, ply + 1, -beta, -alpha, false, start, buffer);
+            score = -search(board, transpositionTable_, depth - 1 + extensions, ply + 1, -beta, -alpha, start, buffer);
         }
         else
         {
@@ -295,19 +365,19 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
             if (lmrValid(board, moves[i], i, depth) && pruningOk) reduction = lmrReduction(i, depth);
 
             // get score
-            score = -search(board, transpositionTable_, depth - 1 - reduction + extensions, ply + 1, -alpha - 1, -alpha, !cut, start, buffer);
+            score = -search(board, transpositionTable_, depth - 1 - reduction + extensions, ply + 1, -alpha - 1, -alpha, start, buffer);
             searchStats_.lmrReductions++;
 
             // re-search if necessary
             if (score > alpha && reduction > 0)
             {
-                score = -search(board, transpositionTable_, depth - 1 + extensions, ply + 1, -beta, -alpha, !cut, start, buffer);
+                score = -search(board, transpositionTable_, depth - 1 + extensions, ply + 1, -beta, -alpha, start, buffer);
                 searchStats_.lmrReductions--;
                 searchStats_.reSearches++;
             }
             else if (score > alpha && score < beta)
             {
-                score = -search(board, transpositionTable_, depth - 1 + extensions, ply + 1, -beta, -alpha, !cut, start, buffer);
+                score = -search(board, transpositionTable_, depth - 1 + extensions, ply + 1, -beta, -alpha, start, buffer);
                 searchStats_.reSearches++;
             }
         }
@@ -358,6 +428,12 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
                 bestMoveCurrentIteration_ = moves[i];
             }
         }
+
+        // if singular extension, decrement extensions
+        if (singularExtension)
+        {
+            extensions--;
+        }
     }
 
     // store in transposition table
@@ -404,7 +480,7 @@ int AI::quiesce(Board& board, int alpha, int beta)
     board.generateMoves(moves, numMoves, true);
 
     // sort moves
-    scoreMoves(board, NULL, killerMoves_, moves, historyTable_, historyMax_, numMoves, -1);
+    scoreMoves(board, {BISHOP_PROMOTION_CAPTURE}, killerMoves_, moves, historyTable_, historyMax_, numMoves, -1);
     sortMoves(moves, numMoves);
 
     // loop through moves
@@ -490,7 +566,7 @@ Move AI::getBestMove(Board& board, TranspositionTable* transpositionTable_, int 
     while (depth <= MAX_DEPTH)
     {
         // search
-        int eval = search(board, transpositionTable_, depth, 0, alpha, beta, false, start, buffer);
+        int eval = search(board, transpositionTable_, depth, 0, alpha, beta, start, buffer);
 
         // check for buffer
         if (buffer == "stop")
@@ -596,7 +672,7 @@ Move threadedSearch(AI& master, Board& board, TranspositionTable* transpositionT
     for (int i = 0; i < THREADS; i++)
     {
         boards[i] = new Board(board.getFen());
-        slaves[i] = new AI();
+        slaves[i] = new AI(i);
 
         // copy history table and killer moves
         for (int j = 0; j < 2; j++)

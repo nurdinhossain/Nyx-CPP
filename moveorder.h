@@ -20,7 +20,7 @@ const int KILLER_OFFSET = 999;
 const int HISTORY_MULTIPLIER = 10;
 
 // score moves based on MVV/LVA
-void scoreMoves(Board& board, TranspositionTable* tt, Move killerMoves[][2], Move moves[], int historyTable[2][64][64], int historyMax, int numMoves, int ply);
+void scoreMoves(Board& board, Move ttMove, Move killerMoves[][2], Move moves[], int historyTable[2][64][64], int historyMax, int numMoves, int ply);
 
 // sort moves based on score
 void sortMoves(Move moves[], int numMoves);

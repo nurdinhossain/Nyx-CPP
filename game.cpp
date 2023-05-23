@@ -232,6 +232,7 @@ void Board::zobristHash()
 {
     currentHash = 0;
 
+    // hash for pieces
     for (int i = 0; i < 64; i++) {
         int piece = squareToPiece[i];
         if (piece != Piece::EMPTY) {
@@ -245,6 +246,19 @@ void Board::zobristHash()
                 pawnHash ^= ZOBRIST_PIECES[color][type-1][i];
             }
         }
+    }
+
+    // hash for castling rights
+    currentHash ^= ZOBRIST_CASTLE[castlingRights];
+
+    // hash for en passant
+    if (enPassant != Square::NONE) {
+        currentHash ^= ZOBRIST_EN_PASSANT[enPassant % 8];
+    }
+
+    // hash for turn
+    if (nextMove == Color::BLACK) {
+        currentHash ^= ZOBRIST_SIDE;
     }
 }
 

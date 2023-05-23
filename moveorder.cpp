@@ -4,13 +4,8 @@
 #include <iostream>
 
 // score moves based on MVV/LVA
-void scoreMoves(Board& board, TranspositionTable* tt, Move killerMoves[][2], Move moves[], int historyTable[2][64][64], int historyMax, int numMoves, int ply) 
+void scoreMoves(Board& board, Move ttMove, Move killerMoves[][2], Move moves[], int historyTable[2][64][64], int historyMax, int numMoves, int ply) 
 {
-    // check for tt move
-    Move ttMove;
-    if (tt != NULL)
-        ttMove = tt->getMove(board.getCurrentHash());
-
     for (int i = 0; i < numMoves; i++) 
     {
         Move move = moves[i];

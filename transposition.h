@@ -9,7 +9,8 @@ enum Flag
 {
     EXACT,
     LOWER_BOUND,
-    UPPER_BOUND
+    UPPER_BOUND,
+    NO_FLAG
 };
 
 // struct for storing transposition table entries
@@ -30,14 +31,16 @@ class TranspositionTable
 
         // helpers/getters
         void clear();
-        Move getMove(UInt64 key);
+        int getDepth(UInt64 data);
+        int getScore(UInt64 data);
+        Flag getFlag(UInt64 data);
+        Move getMove(UInt64 data);
         int correctScoreStore(int score, int ply);
         int correctScoreRead(int score, int ply);
 
         // store/access
         void store(UInt64 key, Flag flag, int depth, int ply, int score, Move move);
         Entry* probe(UInt64 key);
-        int getScore(UInt64 key, int depth, int ply, int alpha, int beta, bool pvNode);
     private:
         // variables
         int size_;

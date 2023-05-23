@@ -37,6 +37,7 @@ struct SearchStats
     int razorPruned{0};
     int multiCutPruned{0};
     int extensions{0};
+    int singularExtensions{0};
     int iidHits{0};
 
     // print and clear methods
@@ -55,10 +56,11 @@ class AI
 
         // constructor/destructor
         AI();
+        AI(int id);
         ~AI();
 
         // search methods
-        int search(Board& board, TranspositionTable* transpositionTable_, int depth, int ply, int alpha, int beta, bool cut, std::chrono::steady_clock::time_point start, std::string& buffer);
+        int search(Board& board, TranspositionTable* transpositionTable_, int depth, int ply, int alpha, int beta, std::chrono::steady_clock::time_point start, std::string& buffer);
         Move getBestMove(Board& board, TranspositionTable* transpositionTable_, int increment, bool verbose, int socket, std::string& buffer);
         int quiesce(Board& board, int alpha, int beta);
 
@@ -72,7 +74,9 @@ class AI
         // private fields
         PawnTable* pawnTable_;
         Move bestMoveCurrentIteration_;
+        Move excludedMove_ = {QUIET, NONE, NONE};
         SearchStats searchStats_;
+        int id_;
 };
 
 // threaded search method

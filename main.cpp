@@ -6,6 +6,7 @@
 #include "book.h"
 #include "tuner.h"
 #include "tables.h"
+#include "evalparams.h"
 #include <iostream>
 #include <string>
 #include <chrono>
@@ -32,7 +33,7 @@ int main()
 	cout << "Enter FEN: ";
 	getline(cin, fen);
 	Board board = Board(fen);
-	AI master = AI();
+	AI master = AI(THREADS);
 	TranspositionTable* tt = new TranspositionTable(TT_SIZE);
 	string buffer;
 	Move move = threadedSearch(master, board, tt, -1, buffer);
@@ -58,7 +59,7 @@ int main()
 	* MAIN PROGRAM
 	*************/
 	/*Board board = Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-	AI master = AI(false);
+	AI master = AI();
 	TranspositionTable* tt = new TranspositionTable(TT_SIZE);
 	bool enemyMoveMade = false;
 	bool allyMoveMade = false;
