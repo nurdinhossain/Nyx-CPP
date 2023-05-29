@@ -128,7 +128,7 @@ def main():
     # login
     driver.get('https://www.chess.com/login')
     driver.find_element(By.ID, 'username').send_keys('ITZQUAGMIRE')
-    driver.find_element(By.ID, 'password').send_keys('Wi?4tkeaBWbGYF2')
+    driver.find_element(By.ID, 'password').send_keys('Wi?4tkeaBWbGYF2') # Wi?4tkeaBWbGYF2
     driver.find_element(By.ID, 'login').click()
 
     # go to live chess and start a game

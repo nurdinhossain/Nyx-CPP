@@ -33,9 +33,9 @@ int main()
 	cout << "Enter FEN: ";
 	getline(cin, fen);
 	Board board = Board(fen);
-	AI master = AI(THREADS);
+	AI master = AI();
 	TranspositionTable* tt = new TranspositionTable(TT_SIZE);
-	string buffer;
+	string buffer = "";
 	Move move = threadedSearch(master, board, tt, -1, buffer);
 
 	delete tt;
@@ -58,7 +58,7 @@ int main()
 	/*************
 	* MAIN PROGRAM
 	*************/
-	/*Board board = Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+	/*Board board = Board("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1");
 	AI master = AI();
 	TranspositionTable* tt = new TranspositionTable(TT_SIZE);
 	bool enemyMoveMade = false;
@@ -164,7 +164,7 @@ int main()
 			UInt64 data = entry->data;
 			if (board.getCurrentHash() == (smpKey ^ data))
 			{
-				if (((data >> 40) & 3) == EXACT)
+				if (tt->getFlag(data) == EXACT)
 					MAX_TIME /= 2;
 			}
 

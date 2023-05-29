@@ -11,7 +11,7 @@ const int MAX_MOVES = 256;
 const int MAX_MOVES_ATTACK = 64;
 extern int MAX_TIME;
 const int KILLER_MAX_PLY = 64;
-const int THREADS = 0;
+const int THREADS = 5;
 
 // aspiration window    
 const int ASPIRATION_WINDOW[6] = { 50, 300, 600, 100000 };
@@ -56,7 +56,6 @@ class AI
 
         // constructor/destructor
         AI();
-        AI(int id);
         ~AI();
 
         // search methods
@@ -73,11 +72,13 @@ class AI
     private:
         // private fields
         PawnTable* pawnTable_;
-        Move bestMoveCurrentIteration_;
+        Move bestMoveCurrentIteration_ = {QUIET, NONE, NONE};
         Move excludedMove_ = {QUIET, NONE, NONE};
         SearchStats searchStats_;
-        int id_;
 };
+
+// is repetition method
+bool isRepetition(Board& board);
 
 // threaded search method
 Move threadedSearch(AI& master, Board& board, TranspositionTable* transpositionTable_, int socket, std::string& buffer);

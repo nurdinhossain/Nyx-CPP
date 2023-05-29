@@ -69,15 +69,6 @@ AI::AI()
     pawnTable_ = new PawnTable(PAWN_HASH_SIZE);
 }
 
-AI::AI(int id)
-{
-    // set the pawn table size
-    pawnTable_ = new PawnTable(PAWN_HASH_SIZE);
-
-    // set the id
-    id_ = id;
-}
-
 AI::~AI()
 {
     // delete the pawn table
@@ -114,7 +105,7 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
     }
 
     // check for threefold repetition
-    if (board.getHistory() > 1)
+    if (isRepetition(board))
     {
         return DRAW;
     }
@@ -180,6 +171,9 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
     int numMoves = 0;
     board.generateMoves(moves, numMoves);
 
+    board.print();
+    std::cout << "Num moves: " << numMoves << " at depth " << depth << std::endl;
+
     // check for mate/stalemate
     bool friendlyKingInCheck = board.getCheckers() != 0;
     if (numMoves == 0)
@@ -227,7 +221,7 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
             if (reliableEval - REVERSE_FUTILE_MARGINS[depth] >= beta)
             {
                 searchStats_.reverseFutilePruned++;
-                return reliableEval;
+                return beta;
             }
         }
 
@@ -616,8 +610,8 @@ Move AI::getBestMove(Board& board, TranspositionTable* transpositionTable_, int 
         }
 
         // print info
-        if (verbose)
-        {
+        //if (verbose)
+        //{
             std::cout << "depth: " << depth;
             std::cout << ", time: " << elapsed.count();
             std::cout << ", best move: " << indexToSquare(bestMove.from) << indexToSquare(bestMove.to);
@@ -645,7 +639,7 @@ Move AI::getBestMove(Board& board, TranspositionTable* transpositionTable_, int 
             {
                 sendMessage(socket, info);
             }
-        }
+        //}
 
         // check for mate
         if (bestScore >= MATE - MAX_DEPTH || bestScore <= -MATE + MAX_DEPTH)
@@ -661,6 +655,22 @@ Move AI::getBestMove(Board& board, TranspositionTable* transpositionTable_, int 
     return bestMove;
 }
 
+// method for determining repetition
+bool isRepetition(Board& board)
+{
+    int count = 0;
+
+    for (int i = 0; i < board.getHistoryIndex(); i++)
+    {
+        if (board.getHistoryHash(i) == board.getCurrentHash())
+        {
+            count++;
+        }
+    }
+
+    return count > 1;
+}
+
 // threaded search method
 Move threadedSearch(AI& master, Board& board, TranspositionTable* transpositionTable_, int socket, std::string& buffer)
 {
@@ -669,10 +679,12 @@ Move threadedSearch(AI& master, Board& board, TranspositionTable* transpositionT
     Board* boards[THREADS];
     std::thread threads[THREADS];
 
+    std::cout << "Beginning threaded search" << std::endl;
+
     for (int i = 0; i < THREADS; i++)
     {
-        boards[i] = new Board(board.getFen());
-        slaves[i] = new AI(i);
+        boards[i] = board.clone();
+        slaves[i] = new AI();
 
         // copy history table and killer moves
         for (int j = 0; j < 2; j++)

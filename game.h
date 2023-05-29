@@ -90,8 +90,6 @@ struct Move
 constexpr UInt64 FILLED_BOARD = 0xFFFFFFFFFFFFFFFFULL;
 constexpr int PIECE_VALUES[5] = {100, 310, 320, 500, 900};
 
-const int HISTORY_SIZE = 64; // 1 mb = 1 * 1024 * 1024 bytes
-
 Color extractColor(int);
 Piece extractPiece(int);
 Square squareToIndex(std::string);
@@ -108,6 +106,9 @@ class Board
         Board() : Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {}
         ~Board();
 
+        // clone
+        Board* clone() const;
+
         // getters
         std::string getFen() const;
         UInt64 getPiece(Color color, Piece piece) const;
@@ -119,7 +120,8 @@ class Board
         Square getEnPassant() const;
         UInt64 getCurrentHash() const;
         UInt64 getPawnHash() const;
-        int getHistory() const;
+        int getHistoryIndex() const;
+        UInt64 getHistoryHash(int index) const;
         int getPieceCount(Color color, Piece piece) const;
         int getMaterial(Color color) const;
         int getStaticEvalOpening() const;
@@ -168,32 +170,32 @@ class Board
         
     private:
         // for board state
-        UInt64 pieces[2][6]; // 2 colors, 6 pieces
-        UInt64 occupied[2]; // 2 colors
-        UInt64 fullOccupied; // all occupied squares
-        int squareToPiece[64]; // maps square to piece
+        UInt64 pieces[2][6] = {0}; // 2 colors, 6 pieces
+        UInt64 occupied[2] = {0};; // 2 colors
+        UInt64 fullOccupied = 0; // all occupied squares
+        int squareToPiece[64] = {0}; // maps square to piece
 
         // for move generation
-        int castlingRights; // 4 bits for white king, white queen, black king, black queen
-        Color nextMove; // 0 for white, 1 for black
-        Square enPassant; // 0-63 for square, 64 for none
+        int castlingRights = 0; // 4 bits for white king, white queen, black king, black queen
+        Color nextMove = WHITE; // 0 for white, 1 for black
+        Square enPassant = NONE; // 0-63 for square, 64 for none
 
         // hashing
-        UInt64 currentHash; // current hash
-        UInt64 pawnHash; // hash for pawns
-        int size_; // size of history table
-        int* history; // dynamic history table
+        UInt64 currentHash = 0; // current hash
+        UInt64 pawnHash = 0; // hash for pawns
+        UInt64 history[1024] = {0}; // history for hashing
+        int historyIndex = 0; // index for history
 
         // for generating legal moves
-        Square kingIndices[2]; // 2 colors
-        UInt64 pinnedPiecesMG; // pinned pieces for move generation
-        UInt64 checkers; // checkers for move generation
-        UInt64 occMG; // occupancy for move generation  
-        UInt64 blockMaskMG; // block mask for move generation
+        Square kingIndices[2] = {NONE, NONE}; // 2 colors
+        UInt64 pinnedPiecesMG = 0; // pinned pieces for move generation
+        UInt64 checkers = 0; // checkers for move generation
+        UInt64 occMG = 0; // occupancy for move generation  
+        UInt64 blockMaskMG = 0; // block mask for move generation
 
         // for static evaluation
-        int pieceCounts[2][6]; // 2 colors, 6 pieces
-        int material[2]; // 2 colors
-        int staticEvalOpening; // static evaluation for opening
-        int staticEvalEndgame; // static evaluation for endgame
+        int pieceCounts[2][6] = {0}; // 2 colors, 6 pieces
+        int material[2] = {0}; // 2 colors
+        int staticEvalOpening = 0; // static evaluation for opening
+        int staticEvalEndgame = 0; // static evaluation for endgame
 };

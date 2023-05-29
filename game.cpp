@@ -83,14 +83,6 @@ Board::Board(std::string fen)
     occMG = 0;
     blockMaskMG = 0;
 
-    // FOR HISTORY
-    int mb = (int)log2(HISTORY_SIZE);
-    size_ = (mb * 1024 * 1024) / sizeof(int);
-    history = new int[size_];
-    for (int i = 0; i < size_; i++) {
-        history[i] = 0;
-    }
-
     // split string into parts by space
     std::string parts[4];
     for (int i = 0; i < 4; i++) {
@@ -172,11 +164,53 @@ Board::Board(std::string fen)
 
     // set up hash
     zobristHash();
+
+    // add to history
+    history[historyIndex++] = currentHash;
 }
 
 Board::~Board()
 {
-    delete[] history;
+}
+
+// clone
+Board* Board::clone() const
+{
+    Board* clone = new Board();
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < 6; j++) {
+            clone->pieces[i][j] = pieces[i][j];
+        }
+    }
+    clone->occupied[0] = occupied[0];
+    clone->occupied[1] = occupied[1];
+    clone->fullOccupied = fullOccupied;
+    for (int i = 0; i < 64; i++) {
+        clone->squareToPiece[i] = squareToPiece[i];
+    }
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < 6; j++) {
+            clone->pieceCounts[i][j] = pieceCounts[i][j];
+        }
+    }
+    for (int i = 0; i < 2; i++) {
+        clone->material[i] = material[i];
+    }
+    clone->staticEvalOpening = staticEvalOpening;
+    clone->staticEvalEndgame = staticEvalEndgame;
+    clone->nextMove = nextMove;
+    clone->castlingRights = castlingRights;
+    clone->enPassant = enPassant;
+    clone->currentHash = currentHash;
+    clone->historyIndex = historyIndex;
+    for (int i = 0; i < 64; i++) {
+        clone->history[i] = history[i];
+    }
+    clone->pinnedPiecesMG = pinnedPiecesMG;
+    clone->checkers = checkers;
+    clone->occMG = occMG;
+    clone->blockMaskMG = blockMaskMG;
+    return clone;
 }
 
 void Board::print() const
@@ -382,9 +416,13 @@ UInt64 Board::getCurrentHash() const
     return currentHash;
 }
 
-int Board::getHistory() const
+int Board::getHistoryIndex() const
 {
-    return history[currentHash % size_];
+    return historyIndex;
+}
+UInt64 Board::getHistoryHash(int index) const
+{
+    return history[index];
 }
 
 int Board::getPieceCount(Color color, Piece piece) const
@@ -1088,8 +1126,8 @@ void Board::makeMove(Move &move)
     if (enPassant != Square::NONE) currentHash ^= ZOBRIST_EN_PASSANT[enPassant % 8];
     currentHash ^= ZOBRIST_SIDE;
 
-    // update history
-    history[currentHash % size_]++;
+    // update history hash
+    history[historyIndex++] = currentHash;
 }
 
 void Board::unmakeMove(Move &move)
@@ -1103,8 +1141,8 @@ void Board::unmakeMove(Move &move)
     Square oldEP = move.oldEnPassant;
     Color color = static_cast<Color>(Color::BLACK - nextMove);
 
-    // update history
-    history[currentHash % size_]--;
+    // update history hash
+    historyIndex--;
 
     // undo old zobrists
     currentHash ^= ZOBRIST_CASTLE[castlingRights];
