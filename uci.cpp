@@ -110,7 +110,7 @@ void uci()
 
             // just search for 1 second
             MAX_TIME = 1;
-            threadedSearch(master, board, tt, -1, buffer);
+            //threadedSearch(master, board, tt, -1, buffer);
         }
         else if (buffer == "stop")
         {

@@ -29,16 +29,16 @@ int main()
 	srand(time(NULL));
 
 	// get console input for fen
-	string fen;
+	/*string fen;
 	cout << "Enter FEN: ";
 	getline(cin, fen);
 	Board board = Board(fen);
 	AI master = AI();
 	TranspositionTable* tt = new TranspositionTable(TT_SIZE);
 	string buffer = "";
-	Move move = threadedSearch(master, board, tt, -1, buffer);
+	Move move = master.getBestMove(board, tt, 1, -1, buffer);
 
-	delete tt;
+	delete tt;*/
 
 	// pso
 	/*while (true)
@@ -51,14 +51,14 @@ int main()
 	/*************
 	* SOCKET SETUP
 	*************/
-    /*int sock = connectSocket();
+    int sock = connectSocket();
 	string buffer;
-	thread listenThread = initListenThread(sock, buffer);*/
+	thread listenThread = initListenThread(sock, buffer);
 
 	/*************
 	* MAIN PROGRAM
 	*************/
-	/*Board board = Board("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1");
+	Board board = Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 	AI master = AI();
 	TranspositionTable* tt = new TranspositionTable(TT_SIZE);
 	bool enemyMoveMade = false;
@@ -160,17 +160,15 @@ int main()
 
 			// if we have an exact score for this position, halve the time limit
 			Entry* entry = tt->probe(board.getCurrentHash());
-			UInt64 smpKey = entry->smpKey;
-			UInt64 data = entry->data;
-			if (board.getCurrentHash() == (smpKey ^ data))
+			if (board.getCurrentHash() == entry->key)
 			{
-				if (tt->getFlag(data) == EXACT)
+				if (entry->flag == EXACT)
 					MAX_TIME /= 2;
 			}
 
 			// search
 			board.print();
-			Move move = threadedSearch(master, board, tt, sock, buffer);
+			Move move = master.getBestMove(board, tt, 1, sock, buffer);
 			board.makeMove(move);
 			master.getSearchStats().clear();
 
@@ -188,7 +186,7 @@ int main()
 		else if (buffer.find("ponder") != string::npos && !enemyMoveMade)
 		{
 			// search
-			Move move = threadedSearch(master, board, tt, sock, buffer);
+			Move move = master.getBestMove(board, tt, 1, sock, buffer);
 			master.getSearchStats().clear();
 
 			// send "ok" to server
@@ -201,7 +199,7 @@ int main()
 	delete tt;
 
 	closeSocket(sock);
-	killListenThread(listenThread);*/
+	killListenThread(listenThread);
 
 	return 0;
 }

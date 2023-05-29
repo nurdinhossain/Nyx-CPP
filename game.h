@@ -84,6 +84,7 @@ struct Move
     Piece pieceTaken;
     int oldCastle;
     Square oldEnPassant;
+    int oldHistoryIndex;
     int score;
 };
 

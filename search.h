@@ -11,10 +11,17 @@ const int MAX_MOVES = 256;
 const int MAX_MOVES_ATTACK = 64;
 extern int MAX_TIME;
 const int KILLER_MAX_PLY = 64;
-const int THREADS = 5;
 
 // aspiration window    
 const int ASPIRATION_WINDOW[6] = { 50, 300, 600, 100000 };
+
+// enum for staged move generation
+enum Stage
+{
+    HASH_MOVES,
+    LOUD_MOVES,
+    QUIET_MOVES
+};
 
 // struct for gathering statistics about the search
 struct SearchStats
@@ -60,7 +67,7 @@ class AI
 
         // search methods
         int search(Board& board, TranspositionTable* transpositionTable_, int depth, int ply, int alpha, int beta, std::chrono::steady_clock::time_point start, std::string& buffer);
-        Move getBestMove(Board& board, TranspositionTable* transpositionTable_, int increment, bool verbose, int socket, std::string& buffer);
+        Move getBestMove(Board& board, TranspositionTable* transpositionTable_, int increment, int socket, std::string& buffer);
         int quiesce(Board& board, int alpha, int beta);
 
         // history table methods
@@ -79,6 +86,3 @@ class AI
 
 // is repetition method
 bool isRepetition(Board& board);
-
-// threaded search method
-Move threadedSearch(AI& master, Board& board, TranspositionTable* transpositionTable_, int socket, std::string& buffer);

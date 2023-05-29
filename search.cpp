@@ -110,21 +110,27 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
         return DRAW;
     }
 
+    // check for fifty move rule
+    if (board.getHistoryIndex() >= 100)
+    {
+        return DRAW;
+    }  
+
     // transposition table lookup
     Entry* ttEntry = transpositionTable_->probe(board.getCurrentHash());
-    UInt64 smpKey = ttEntry->smpKey, data = ttEntry->data;
+    UInt64 ttKey = ttEntry->key;
     int ttScore = FAIL_SCORE, ttDepth = 0;
     Flag ttFlag = NO_FLAG;
     Move ttMove = {BISHOP_PROMOTION_CAPTURE};
 
-    if ((smpKey ^ data) == board.getCurrentHash())
+    if (ttKey == board.getCurrentHash())
     {
         // get info from tt
-        ttDepth = transpositionTable_->getDepth(data);
-        ttMove = transpositionTable_->getMove(data);
-        ttScore = transpositionTable_->getScore(data);
-        ttScore = transpositionTable_->correctScoreRead(ttScore - POS_INF, ply);
-        ttFlag = transpositionTable_->getFlag(data);
+        ttDepth = ttEntry->depth;
+        ttMove = ttEntry->move;
+        ttScore = ttEntry->score;
+        ttScore = transpositionTable_->correctScoreRead(ttScore, ply);
+        ttFlag = ttEntry->flag;
 
         if (ttDepth >= depth)
         {
@@ -170,9 +176,6 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
     Move moves[MAX_MOVES];
     int numMoves = 0;
     board.generateMoves(moves, numMoves);
-
-    board.print();
-    std::cout << "Num moves: " << numMoves << " at depth " << depth << std::endl;
 
     // check for mate/stalemate
     bool friendlyKingInCheck = board.getCheckers() != 0;
@@ -262,14 +265,14 @@ int AI::search(Board& board, TranspositionTable* transpositionTable_, int depth,
         search(board, transpositionTable_, depth - IID_DR, ply, alpha, beta, start, buffer);
 
         // check if the tt entry is now valid
-        smpKey = ttEntry->smpKey, data = ttEntry->data;
-        if ((smpKey ^ data) == board.getCurrentHash())
+        ttKey = ttEntry->key;
+        if (ttKey == board.getCurrentHash())
         {
-            ttDepth = transpositionTable_->getDepth(data);
-            ttMove = transpositionTable_->getMove(data);
-            ttFlag = transpositionTable_->getFlag(data);
-            ttScore = transpositionTable_->getScore(data);
-            ttScore = transpositionTable_->correctScoreRead(ttScore - POS_INF, ply);
+            ttDepth = ttEntry->depth;
+            ttMove = ttEntry->move;
+            ttFlag = ttEntry->flag;
+            ttScore = ttEntry->score;
+            ttScore = transpositionTable_->correctScoreRead(ttScore, ply);
             searchStats_.iidHits++;
         }
     }
@@ -542,7 +545,7 @@ void AI::ageHistory()
     historyMax_ = std::max(historyMax_ / 2, 1);
 }
 
-Move AI::getBestMove(Board& board, TranspositionTable* transpositionTable_, int increment, bool verbose, int socket, std::string& buffer)
+Move AI::getBestMove(Board& board, TranspositionTable* transpositionTable_, int increment, int socket, std::string& buffer)
 {
     // initialize variables
     Move bestMove = {QUIET, NONE, NONE};
@@ -610,36 +613,33 @@ Move AI::getBestMove(Board& board, TranspositionTable* transpositionTable_, int 
         }
 
         // print info
-        //if (verbose)
-        //{
-            std::cout << "depth: " << depth;
-            std::cout << ", time: " << elapsed.count();
-            std::cout << ", best move: " << indexToSquare(bestMove.from) << indexToSquare(bestMove.to);
-            std::cout << ", score: " << bestScore / 100.0 << ", ";
-            searchStats_.print();
+        std::cout << "depth: " << depth;
+        std::cout << ", time: " << elapsed.count();
+        std::cout << ", best move: " << indexToSquare(bestMove.from) << indexToSquare(bestMove.to);
+        std::cout << ", score: " << bestScore / 100.0 << ", ";
+        searchStats_.print();
 
-            // print info
-            std::string stringMove = indexToSquare(bestMove.from) + indexToSquare(bestMove.to);
-            if (bestMove.type == KNIGHT_PROMOTION || bestMove.type == KNIGHT_PROMOTION_CAPTURE) stringMove += "n";
-            else if (bestMove.type == BISHOP_PROMOTION || bestMove.type == BISHOP_PROMOTION_CAPTURE) stringMove += "b";
-            else if (bestMove.type == ROOK_PROMOTION || bestMove.type == ROOK_PROMOTION_CAPTURE) stringMove += "r";
-            else if (bestMove.type == QUEEN_PROMOTION || bestMove.type == QUEEN_PROMOTION_CAPTURE) stringMove += "q";
-            std::string info = "info depth " + std::to_string(depth) + " score cp " + std::to_string(bestScore) + " pv " + stringMove + "\n";
-            //std::cout << info;
+        // print info
+        std::string stringMove = indexToSquare(bestMove.from) + indexToSquare(bestMove.to);
+        if (bestMove.type == KNIGHT_PROMOTION || bestMove.type == KNIGHT_PROMOTION_CAPTURE) stringMove += "n";
+        else if (bestMove.type == BISHOP_PROMOTION || bestMove.type == BISHOP_PROMOTION_CAPTURE) stringMove += "b";
+        else if (bestMove.type == ROOK_PROMOTION || bestMove.type == ROOK_PROMOTION_CAPTURE) stringMove += "r";
+        else if (bestMove.type == QUEEN_PROMOTION || bestMove.type == QUEEN_PROMOTION_CAPTURE) stringMove += "q";
+        std::string info = "info depth " + std::to_string(depth) + " score cp " + std::to_string(bestScore) + " pv " + stringMove + "\n";
+        //std::cout << info;
 
-            // adjust time depending on pv changes  
-            if (pvChanges > 1)
-            {
-                MAX_TIME += 1;
-                pvChanges = 0;
-            }
+        // adjust time depending on pv changes  
+        if (pvChanges > 1)
+        {
+            MAX_TIME += 1;
+            pvChanges = 0;
+        }
 
-            // send info to gui
-            if (socket != -1)
-            {
-                sendMessage(socket, info);
-            }
-        //}
+        // send info to gui
+        if (socket != -1)
+        {
+            sendMessage(socket, info);
+        }
 
         // check for mate
         if (bestScore >= MATE - MAX_DEPTH || bestScore <= -MATE + MAX_DEPTH)
@@ -669,71 +669,5 @@ bool isRepetition(Board& board)
     }
 
     return count > 1;
-}
-
-// threaded search method
-Move threadedSearch(AI& master, Board& board, TranspositionTable* transpositionTable_, int socket, std::string& buffer)
-{
-    // declare AIs and threads based on THREADS constant
-    AI* slaves[THREADS];
-    Board* boards[THREADS];
-    std::thread threads[THREADS];
-
-    std::cout << "Beginning threaded search" << std::endl;
-
-    for (int i = 0; i < THREADS; i++)
-    {
-        boards[i] = board.clone();
-        slaves[i] = new AI();
-
-        // copy history table and killer moves
-        for (int j = 0; j < 2; j++)
-        {
-            for (int k = 0; k < 64; k++)
-            {
-                for (int l = 0; l < 64; l++)
-                {
-                    slaves[i]->historyTable_[j][k][l] = master.historyTable_[j][k][l];
-                }
-            }
-        }
-        for (int j = 0; j < MAX_DEPTH; j++)
-        {
-            for (int k = 0; k < 2; k++)
-            {
-                slaves[i]->killerMoves_[j][k] = master.killerMoves_[j][k];
-            }
-        }
-
-        // start threads
-        threads[i] = std::thread(&AI::getBestMove, std::ref(*slaves[i]), std::ref(*boards[i]), transpositionTable_, 1, false, socket, std::ref(buffer));
-    }
-
-    // main thread
-    Move bestMove = master.getBestMove(board, transpositionTable_, 1, true, socket, buffer);
-
-    // stop threads
-    for (int i = 0; i < THREADS; i++)
-    {
-        threads[i].join();
-    }
-
-    // delete boards and slaves
-    for (int i = 0; i < THREADS; i++)
-    {
-        delete boards[i];
-        delete slaves[i];
-    }
-
-    // print best move in uci format
-    std::string stringMove = indexToSquare(bestMove.from) + indexToSquare(bestMove.to);
-    if (bestMove.type == KNIGHT_PROMOTION || bestMove.type == KNIGHT_PROMOTION_CAPTURE) stringMove += "n";
-    else if (bestMove.type == BISHOP_PROMOTION || bestMove.type == BISHOP_PROMOTION_CAPTURE) stringMove += "b";
-    else if (bestMove.type == ROOK_PROMOTION || bestMove.type == ROOK_PROMOTION_CAPTURE) stringMove += "r";
-    else if (bestMove.type == QUEEN_PROMOTION || bestMove.type == QUEEN_PROMOTION_CAPTURE) stringMove += "q";
-    std::cout << "bestmove " << stringMove << std::endl;
-
-    // return best move
-    return bestMove;
 }
 
